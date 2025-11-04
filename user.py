@@ -76,6 +76,14 @@ class User:
         else:
             raise NameError("User doesn't exist")
 
+    def change_password(self, connection, password):
+        cursor = connection.cursor()
+        cursor.execute("UPDATE users SET password_hash = %s WHERE id = %s", (password, self.user_id,))
+        connection.commit()
+        cursor.close()
+        self.password = password
+
+
     def add_follower(self, connection, follower, add_follow:bool=True):
         if self.is_created:
             cursor = connection.cursor()
@@ -93,7 +101,6 @@ class User:
                     follower_data.remove(follower.user_id)
                     following_data.remove(self.user_id)
                 self.followers = follower_data
-                print(self.followers)
                 cursor.execute("UPDATE users SET followers = %s WHERE id = %s",
                                (follower_data, self.user_id))
                 cursor.execute("UPDATE users SET following = %s WHERE id = %s",
@@ -149,12 +156,15 @@ class User:
 
     def liked(self, connection, count, offset=0):
         posts = []
-        self.liked_posts.sort(reverse=True)
-        for post_id in self.liked_posts[offset:offset+count]:
-            try:
-                posts.append(Post.read(connection, post_id))
-            except NameError:
-                pass
+        try:
+            self.liked_posts.sort(reverse=True)
+            for post_id in self.liked_posts[offset:offset+count]:
+                try:
+                    posts.append(Post.read(connection, post_id))
+                except NameError:
+                    pass
+        except AttributeError:
+            return []
         return posts
 
     @staticmethod

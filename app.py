@@ -255,6 +255,40 @@ def signup():
                 connection.close()
                 return render_template("users/signup.html", routes=routes, user=local_user, error_message="Passwords do not match")
 
+@app.route(routes["change_password"], methods=['GET', 'POST'])
+def change_password():
+    connection = get_db_connection()
+    local_user = check_token(connection, request.cookies)
+
+    if not local_user:
+        connection.close()
+        return redirect(routes["home"])
+    else:
+        if request.method == 'GET':
+            connection.close()
+            return render_template("settings/password.html", routes=routes, user=local_user, error_message=None)
+        else:
+            old_password = request.form.get('old_password')
+            new_password = request.form.get('new_password')
+            verify_new_password = request.form.get('verify_new_password')
+
+            if verify_new_password == new_password:
+                print(old_password, new_password, verify_new_password)
+                if old_password != new_password:
+                    if old_password == local_user.password:
+                        local_user.change_password(connection, new_password)
+                        print(f"{local_user.username} changed their password")
+                        return redirect(routes["user"].format(local_user.username))
+                    else:
+                        return render_template("settings/password.html", routes=routes, user=local_user,
+                                               error_message="Old password is incorrect")
+                else:
+                    return render_template("settings/password.html", routes=routes, user=local_user,
+                                           error_message="Password is already in use")
+            else:
+                return render_template("settings/password.html", routes=routes, user=local_user,
+                                       error_message="Passwords do not match")
+
 @app.route(routes["about"])
 def about():
     connection = get_db_connection()

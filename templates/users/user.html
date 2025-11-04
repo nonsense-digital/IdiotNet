@@ -8,9 +8,10 @@
     <button id="follow" data-username="{{ search_user.username }}" data-follow="{{ not user.user_id in search_user.followers }}"></button>
     {% endif %}
     <h2>About</h2>
-    <p id="about">{{ search_user.bio }}</p>
+    <pre id="about">{{ search_user.bio }}</pre>
     {% if user.username == search_user.username %}
         <a href="{{ request.url + "\edit" }}">Edit...</a>
+        <a href="{{ routes["change_password"] }}">Change Password...</a>
     {% endif %}
 
     <h2>Latest Posts</h2>
