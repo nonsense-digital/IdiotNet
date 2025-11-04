@@ -1,8 +1,10 @@
+import string
+
 from flask import Flask, request, render_template, redirect, make_response, abort, jsonify
 
 from comment import Comment
 from post import Post
-from user import User
+from user import User, check_username, check_password
 from routes import routes, API
 from auth_token import Token
 import os
@@ -141,6 +143,7 @@ def check_token(connection, cookies):
         except NameError:
             return None
     else:
+        #cookies.remove('token')
         return None
 
 @app.route(routes["login"], methods=['GET', 'POST'])
@@ -236,29 +239,42 @@ def signup():
             password = request.form.get('password')
             verify_password = request.form.get('verify_password')
 
-            if verify_password == password:
-                try:
-                    test_user = User.read(connection, username)
-                    return render_template("users/signup.html", routes=routes, user=local_user,
-                                           error_message=f'Username {test_user.username} already exists')
-                except NameError:
-                    local_user = User(username=username, password=password)
-                    local_user.create(connection)
-                    token = Token(local_user.user_id)
-                    resp = make_response(redirect(routes["home"]))
-                    token.create(connection)
-                    connection.close()
-                    resp.set_cookie('token', token.token_id)
-                    print(f'User {username} created')
-                    return resp
-            else:
+            user_error = check_username(username)
+            if user_error is not None:
                 connection.close()
-                return render_template("users/signup.html", routes=routes, user=local_user, error_message="Passwords do not match")
+                return render_template("users/signup.html", routes=routes, user=local_user,
+                                       error_message= user_error)
+
+            password_error = check_password(password, verify_password)
+            if password_error is not None:
+                connection.close()
+                return render_template("users/signup.html", routes=routes, user=local_user,
+                                       error_message= password_error)
+
+            try:
+                test_user = User.read(connection, username)
+                connection.close()
+                return render_template("users/signup.html", routes=routes, user=local_user,
+                                       error_message=f'Username {test_user.username} already exists')
+            except NameError:
+                local_user = User(username=username, password=password)
+                local_user.create(connection)
+                token = Token(local_user.user_id)
+                resp = make_response(redirect(routes["home"]))
+                token.create(connection)
+                connection.close()
+                resp.set_cookie('token', token.token_id)
+                print(f'User {username} created')
+                return resp
+
+
+
 
 @app.route(routes["change_password"], methods=['GET', 'POST'])
 def change_password():
     connection = get_db_connection()
     local_user = check_token(connection, request.cookies)
+
 
     if not local_user:
         connection.close()
@@ -272,22 +288,19 @@ def change_password():
             new_password = request.form.get('new_password')
             verify_new_password = request.form.get('verify_new_password')
 
-            if verify_new_password == new_password:
-                print(old_password, new_password, verify_new_password)
-                if old_password != new_password:
-                    if old_password == local_user.password:
-                        local_user.change_password(connection, new_password)
-                        print(f"{local_user.username} changed their password")
-                        return redirect(routes["user"].format(local_user.username))
-                    else:
-                        return render_template("settings/password.html", routes=routes, user=local_user,
-                                               error_message="Old password is incorrect")
-                else:
-                    return render_template("settings/password.html", routes=routes, user=local_user,
-                                           error_message="Password is already in use")
+            password_error = check_password(new_password, verify_new_password, old_password)
+            if password_error is not None:
+                connection.close()
+                return render_template("users/signup.html", routes=routes, user=local_user,
+                                       error_message=password_error)
+
+            if old_password == local_user.password:
+                local_user.change_password(connection, new_password)
+                print(f"{local_user.username} changed their password")
+                return redirect(routes["user"].format(local_user.username))
             else:
                 return render_template("settings/password.html", routes=routes, user=local_user,
-                                       error_message="Passwords do not match")
+                                       error_message=f'Incorrect old password')
 
 @app.route(routes["about"])
 def about():

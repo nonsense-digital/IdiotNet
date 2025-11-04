@@ -3,6 +3,33 @@ import datetime
 from post import Post
 from routes import routes
 
+ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyz1234567890_"
+
+def check_username(username):
+    global ALLOWED_CHARS
+    if username == "":
+        return "Username is required"
+    elif len(username) > 15:
+        return "Username limit is 15 characters"
+    else:
+        for char in username:
+            if char.lower() not in ALLOWED_CHARS:
+                return 'Only alphanumeric characters and underscores are allowed in usernames'
+    return None
+
+def check_password(password, verify_password, previous=None):
+    if password == "":
+        return "Password is required"
+    elif len(password) > 100:
+        return "Passwords limit is 100 characters"
+    elif verify_password != password:
+        return "Passwords do not match"
+    elif password == previous and previous is not None:
+        return "Password is already in use"
+    else:
+        return None
+
+
 class User:
     def __init__(self, username, password, email=None):
         self.username = username
