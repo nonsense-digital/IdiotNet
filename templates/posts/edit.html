@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block title %}IdiotNet | Edit Post{% endblock %}
+{% block content %}
+    <h1>Edit Post</h1>
+    <form action="{{ request.url}}" method="POST">
+        <label for="title">Title:</label><input name="title" type="text" id="title" value="{{ post.title }}"><br>
+        <textarea id="content" name="content" rows="5" cols="40" placeholder="Once upon a time...">{{ post.content }}</textarea><br/>
+        <input class="submit" type="submit" value="Submit">
+    </form>
+{% endblock %}

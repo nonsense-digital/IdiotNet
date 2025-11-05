@@ -4,6 +4,7 @@ routes = {
     "post": "/posts/{}",
     "latest": "/posts/latest",
     "new_post": "/posts/new",
+    "post_edit": "/posts/{}/edit",
     "login": "/users/login",
     "signup": "/users/signup",
     "user": "/users/{}",

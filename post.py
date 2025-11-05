@@ -40,7 +40,7 @@ class Post:
         cursor.execute("SELECT likes from posts WHERE id=%s", (self.post_id,))
         self.likes = int(cursor.fetchone()[0])
         self.likes += 1 if add_like else -1
-        cursor.execute("UPDATE posts SET likes=%s WHERE id=%s", (self.likes, self.post_id,))
+        cursor.execute("UPDATE posts SET likes = %s WHERE id = %s", (self.likes, self.post_id,))
         connection.commit()
         cursor.close()
 
@@ -52,6 +52,14 @@ class Post:
         cursor.execute("UPDATE posts SET comments = %s WHERE id=%s", (self.comments, self.post_id))
         connection.commit()
         cursor.close()
+
+    def edit_post(self, connection, title, content):
+        cursor = connection.cursor()
+        cursor.execute("UPDATE posts set (title, content) = (%s, %s) WHERE id=%s", (title, content, (self.post_id,)))
+        connection.commit()
+        cursor.close()
+        self.title = title
+        self.content = content
 
 
     @staticmethod

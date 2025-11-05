@@ -202,6 +202,32 @@ def new_post():
             print(f"{local_user.username} created post #{staged_post.post_id}")
             return redirect(staged_post.url)
 
+@app.route(routes["post_edit"].format("<post_id>"), methods=['GET', 'POST'])
+def edit_post(post_id):
+    connection = get_db_connection()
+    local_user = check_token(connection, request.cookies)
+
+    if not local_user:
+        connection.close()
+        return redirect(routes["login"])
+    else:
+        read_post = Post.read(connection, post_id)
+
+        if read_post.author_id == local_user.user_id:
+            if request.method == 'GET':
+                connection.close()
+                return render_template("posts/edit.html", routes=routes, user=local_user, post=read_post)
+            else:
+                title = request.form.get('title')
+                content = request.form.get('content')
+
+                read_post.edit_post(connection, title, content)
+                print(f"{local_user.username} edited post #{post_id}")
+                return redirect(read_post.url)
+        else:
+            connection.close()
+            return redirect(routes["post"].format(post_id))
+
 @app.route(routes["user_edit"].format("<username>"), methods=['GET', 'POST'])
 def user_edit(username):
     connection = get_db_connection()
