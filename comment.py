@@ -1,7 +1,5 @@
 import datetime
-import json
 
-from post import Post
 from user import User
 
 class Comment:
@@ -24,40 +22,15 @@ class Comment:
             self.is_published = True
             self.author_name = user.username
             cursor = connection.cursor()
-            query = "INSERT INTO comments (content, author, root_comment, date_posted, comment_type, comment_page, replies) VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id"
-            data = (self.content, self.author, self.root_comment, self.date_posted, self.comment_type, self.comment_page, self.replies)
+            query = "INSERT INTO comments (content, author, root_comment, date_posted, comment_type, comment_page) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id"
+            data = (self.content, self.author, self.root_comment, self.date_posted, self.comment_type, self.comment_page)
             cursor.execute(query, data)
             connection.commit()
             self.comment_id = cursor.fetchone()[0]
             cursor.close()
-            if self.is_root:
-                post = Post.read(connection, self.comment_page)
-                post.add_comment(connection, self.comment_id)
-            else:
-                comment = Comment.read(connection, self.root_comment)
-                comment.add_reply(connection, self.comment_id)
 
         else:
             raise Exception("Post is already published")
-
-    def add_reply(self, connection, comment_id):
-        if self.is_root:
-            cursor = connection.cursor()
-            query = "SELECT replies FROM comments WHERE id=%s"
-            cursor.execute(query, (self.comment_id,))
-            data = cursor.fetchone()
-            if data is None:
-                raise NameError("Comment not found")
-            else:
-                comment_ids = data[0]
-                comment_ids.append(comment_id)
-                query = "UPDATE comments SET replies=%s WHERE id=%s"
-                cursor.execute(query, (comment_ids, self.comment_id))
-                self.replies.append(Comment.read(connection, comment_id))
-                connection.commit()
-                cursor.close()
-        else:
-            raise NameError("Cannot add reply to non-root comment")
 
     @staticmethod
     def read(connection, comment_id):
@@ -72,8 +45,13 @@ class Comment:
             c.comment_id = data[0]
             c.author_name = User.read(connection, data[2]).username
             c.date_posted = data[4]
-            comment_ids = data[7]
-            for reply_id in comment_ids:
-                c.replies.append(Comment.read(connection, reply_id))
+            cursor.execute("SELECT id FROM comments WHERE root_comment = %s ORDER BY date_posted",
+                           (c.comment_id,))
+            c.replies = []
+            for comment_id in cursor.fetchall():
+                try:
+                    c.replies.append(Comment.read(connection, comment_id[0]))
+                except NameError:
+                    pass
             return c
 

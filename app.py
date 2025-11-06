@@ -1,5 +1,3 @@
-import string
-
 from flask import Flask, request, render_template, redirect, make_response, abort, jsonify
 
 from comment import Comment
@@ -78,7 +76,7 @@ def user(username):
         posts_latest = latest_posts(3, 0, search_user)
         posts_liked = latest_posts(3, 0, search_user, filter="liked")
         return render_template('users/user.html', routes=routes, posts_latest=posts_latest, posts_liked=posts_liked, user=local_user, search_user=search_user)
-    except NameError as e:
+    except NameError:
         abort(404, "User not found")
 
 @app.route(routes["user_posts"].format("<username>"))
@@ -123,14 +121,8 @@ def post(post_id):
         read_post = Post.read(connection, post_id)
         read_post.content = Markup(markdown.markdown(read_post.content))
         author = User.read(connection, read_post.author_id)
-        comments = []
-        for comment_id in read_post.comments:
-            try:
-                comments.append(Comment.read(connection, comment_id))
-            except NameError:
-                pass
         connection.close()
-        return render_template('posts/post.html', routes=routes, user=local_user, post=read_post, author=author, API=API, comments=comments)
+        return render_template('posts/post.html', routes=routes, user=local_user, post=read_post, author=author, API=API)
     except NameError:
         abort(404, "Post not found")
 

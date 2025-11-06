@@ -1,6 +1,6 @@
 create table public.comments
 (
-    id           integer generated always as identity (minvalue 0)
+    id           integer generated always as identity
         constraint comments_pk
             primary key,
     content      text    default ''::text,
@@ -8,8 +8,7 @@ create table public.comments
     root_comment integer default '-1'::integer not null,
     date_posted  timestamp                     not null,
     comment_type integer default 0             not null,
-    comment_page integer                       not null,
-    replies      integer[]
+    comment_page integer                       not null
 );
 
 alter table public.comments
@@ -17,7 +16,7 @@ alter table public.comments
 
 create table public.images
 (
-    id            integer generated always as identity (minvalue 0)
+    id            integer generated always as identity
         constraint images_pk
             primary key,
     title         text default ''::text,
@@ -31,15 +30,14 @@ alter table public.images
 
 create table public.posts
 (
-    id          integer generated always as identity (minvalue 0)
+    id          integer generated always as identity
         constraint posts_pk
             primary key,
     title       text    default 'Untitled Post'::text not null,
     content     text    default ''::text              not null,
     author      integer                               not null,
     date_posted timestamp,
-    likes       integer default 0,
-    comments    text[]  default '{}'::text[]          not null
+    likes       integer default 0
 );
 
 alter table public.posts
@@ -57,12 +55,12 @@ alter table public.tokens
 
 create table public.users
 (
-    id            integer generated always as identity (minvalue 0),
+    id            integer generated always as identity,
     username      varchar(15)                       not null,
     email         varchar(60),
     date_created  timestamp                         not null,
     password_hash varchar(255)                      not null,
-    posts     integer[] default '{}'::integer[] not null,
+    posts         integer[] default '{}'::integer[] not null,
     followers     integer[] default '{}'::integer[] not null,
     following     integer[] default '{}'::integer[] not null,
     liked_posts   integer[] default '{}'::integer[] not null,

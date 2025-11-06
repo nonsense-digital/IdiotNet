@@ -23,8 +23,8 @@ class Post:
             self.is_published = True
             self.author_name = user.username
             cursor = connection.cursor()
-            query = "INSERT INTO posts (title, content, author, date_posted, likes, comments) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id"
-            data = (self.title, self.content, self.author_id, self.date_posted, self.likes, self.comments)
+            query = "INSERT INTO posts (title, content, author, date_posted, likes) VALUES (%s, %s, %s, %s, %s) RETURNING id"
+            data = (self.title, self.content, self.author_id, self.date_posted, self.likes,)
             cursor.execute(query, data)
             connection.commit()
             self.post_id = cursor.fetchone()[0]
@@ -41,15 +41,6 @@ class Post:
         self.likes = int(cursor.fetchone()[0])
         self.likes += 1 if add_like else -1
         cursor.execute("UPDATE posts SET likes = %s WHERE id = %s", (self.likes, self.post_id,))
-        connection.commit()
-        cursor.close()
-
-    def add_comment(self, connection, comment_id):
-        cursor = connection.cursor()
-        cursor.execute("SELECT comments from posts WHERE id=%s", (self.post_id,))
-        self.comments = cursor.fetchone()[0]
-        self.comments.append(comment_id)
-        cursor.execute("UPDATE posts SET comments = %s WHERE id=%s", (self.comments, self.post_id))
         connection.commit()
         cursor.close()
 
@@ -82,7 +73,19 @@ class Post:
         p.likes = record[5]
         p.is_published = True
         p.url = routes["post"].format(p.post_id)
-        p.comments = record[6]
+        p.comments = []
+
+        # get comments (first comment in 1000 lines of code lol)
+        from comment import Comment
+        cursor = connection.cursor()
+        cursor.execute("SELECT id FROM comments WHERE comment_page = %s AND comment_type = 0 AND root_comment = -1 ORDER BY date_posted",
+                       (p.post_id,))
+        p.comments = []
+        for comment_id in cursor.fetchall():
+            try:
+                p.comments.append(Comment.read(connection, comment_id[0]))
+            except NameError:
+                pass
         return p
 
     @staticmethod
