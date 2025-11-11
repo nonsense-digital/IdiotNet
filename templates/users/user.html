@@ -3,9 +3,9 @@
 {% block title %}IdiotNet | {{ search_user.username }}{% endblock %}
 {% block content %}
     <h1>{{ search_user.username }}</h1>
-    <h3><span id="follower-count">{{ search_user.follower_count() }}</span> Followers</h3>
+    <h3><span id="follower-count">{{ search_user.follower_ids|length }}</span> Followers</h3>
     {% if user %}
-    <button id="follow" data-username="{{ search_user.username }}" data-follow="{{ not user.user_id in search_user.followers }}"></button>
+    <button id="follow" data-username="{{ search_user.username }}" data-follow="{{ not user.user_id in search_user.follower_ids }}"></button>
     {% endif %}
     <h2>About</h2>
     <pre id="about">{{ search_user.bio }}</pre>

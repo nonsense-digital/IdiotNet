@@ -18,18 +18,29 @@ db_password = os.getenv("DB_PASSWORD")
 db_host = os.getenv("DB_HOST")
 db_port = os.getenv("DB_PORT")
 db_name = os.getenv("DB_NAME")
-def get_db_connection():
-    connection = psycopg2.connect(
+global_connection = psycopg2.connect(
         dbname=db_name,
         user=db_user,
         password=db_password,
         host=db_host,
         port=db_port
     )
-    return connection
+
+def get_db_connection():
+    global global_connection
+    return global_connection
 
 # Set up Flask app
 app = Flask(__name__)
+
+@app.route('/shutdown', methods=['POST'])
+def shutdown():
+    func = request.environ.get('werkzeug.server.shutdown')
+    if func is None:
+        raise RuntimeError('Not running with the Werkzeug Server')
+    get_db_connection().close()
+    func()
+    return 'Server shutting down...'
 
 def latest_posts(count:int, offset=0, search_user:User=None, sort_by="latest", filter=None) -> tuple:
     connection = get_db_connection()
@@ -37,10 +48,10 @@ def latest_posts(count:int, offset=0, search_user:User=None, sort_by="latest", f
         posts = Post.latest(connection, count, offset*count, sort_by)
     else:
         if filter == "liked":
-            posts = search_user.liked(connection, count, offset*count)
+            posts = search_user.liked_posts
         else:
-            posts = search_user.latest(connection, count, offset*count)
-    connection.close()
+            posts = search_user.posts
+
     return posts
 
 def paged_posts(page:int, search_user:User=None, sort_by="latest", filter=None) -> tuple:
@@ -91,7 +102,7 @@ def user_posts(username):
             page = int(page)
         search_user = User.read(connection, username)
         posts, is_last_page = paged_posts(page, search_user)
-        connection.close()
+
         return render_template('users/posts.html', type="Posts", routes=routes, user=local_user, posts=posts, is_last_page=is_last_page, page=page, search_user=search_user)
     except NameError:
         abort(404, "User not found")
@@ -108,7 +119,7 @@ def user_liked_posts(username):
             page = int(page)
         search_user = User.read(connection, username)
         posts, is_last_page = paged_posts(page, search_user, filter="liked")
-        connection.close()
+
         return render_template('users/posts.html', type="Liked Posts", routes=routes, user=local_user, posts=posts, is_last_page=is_last_page, page=page, search_user=search_user)
     except NameError:
         abort(404, "User not found")
@@ -121,7 +132,7 @@ def post(post_id):
         read_post = Post.read(connection, post_id)
         read_post.content = Markup(markdown.markdown(read_post.content))
         author = User.read(connection, read_post.author_id)
-        connection.close()
+
         return render_template('posts/post.html', routes=routes, user=local_user, post=read_post, author=author, API=API)
     except NameError:
         abort(404, "Post not found")
@@ -144,12 +155,12 @@ def login():
     local_user = check_token(connection, request.cookies)
 
     if local_user:
-        connection.close()
+
         print(f"{local_user.username} is already logged in")
         return redirect(routes["home"])
     else:
         if request.method == 'GET':
-            connection.close()
+
             return render_template("users/login.html", routes=routes, user=local_user)
         else:
             username = request.form.get('username')
@@ -158,17 +169,17 @@ def login():
             try:
                 local_user = User.read(connection, username)
 
-                if local_user.password == password:
+                if local_user.password_hash == password:
                     print(f"User {username} logged in successfully")
                     token = Token(local_user.user_id)
                     resp = make_response(redirect(routes["home"]))
                     token.create(connection)
-                    connection.close()
+
                     resp.set_cookie('token', token.token_id)
                     return resp
                 else:
                     print(f"User {username} failed to log in")
-                    connection.close()
+
                     return render_template("users/login.html", routes=routes, user=local_user, error_message=f'Incorrect password')
             except NameError:
                 return render_template("users/login.html", routes=routes, user=local_user, error_message=f'User {username} does not exist')
@@ -179,11 +190,11 @@ def new_post():
     local_user = check_token(connection, request.cookies)
 
     if not local_user:
-        connection.close()
+
         return redirect(routes["login"])
     else:
         if request.method == 'GET':
-            connection.close()
+
             return render_template("posts/new.html", routes=routes, user=local_user)
         else:
             title = request.form.get('title')
@@ -200,14 +211,14 @@ def edit_post(post_id):
     local_user = check_token(connection, request.cookies)
 
     if not local_user:
-        connection.close()
+
         return redirect(routes["login"])
     else:
         read_post = Post.read(connection, post_id)
 
         if read_post.author_id == local_user.user_id:
             if request.method == 'GET':
-                connection.close()
+
                 return render_template("posts/edit.html", routes=routes, user=local_user, post=read_post)
             else:
                 title = request.form.get('title')
@@ -217,7 +228,7 @@ def edit_post(post_id):
                 print(f"{local_user.username} edited post #{post_id}")
                 return redirect(read_post.url)
         else:
-            connection.close()
+
             return redirect(routes["post"].format(post_id))
 
 @app.route(routes["user_edit"].format("<username>"), methods=['GET', 'POST'])
@@ -226,16 +237,16 @@ def user_edit(username):
     local_user = check_token(connection, request.cookies)
 
     if not local_user:
-        connection.close()
+
         return redirect(routes["login"])
     else:
         if request.method == 'GET':
-            connection.close()
+
             return render_template("users/edit.html", routes=routes, user=local_user)
         else:
             content = request.form.get('content')
 
-            local_user.update_bio(connection, content)
+            local_user.bio = content
             print(f"{local_user.username} edited their user bio")
             return redirect(routes["user"].format(local_user.username))
 
@@ -245,12 +256,12 @@ def signup():
     local_user = check_token(connection, request.cookies)
 
     if local_user:
-        connection.close()
+
         print(f"{local_user.username} is already logged in")
         return redirect(routes["home"])
     else:
         if request.method == 'GET':
-            connection.close()
+
             return render_template("users/signup.html", routes=routes, user=local_user, error_message=None)
         else:
             username = request.form.get('username')
@@ -259,28 +270,27 @@ def signup():
 
             user_error = check_username(username)
             if user_error is not None:
-                connection.close()
+
                 return render_template("users/signup.html", routes=routes, user=local_user,
                                        error_message= user_error)
 
             password_error = check_password(password, verify_password)
             if password_error is not None:
-                connection.close()
+
                 return render_template("users/signup.html", routes=routes, user=local_user,
                                        error_message= password_error)
 
             try:
                 test_user = User.read(connection, username)
-                connection.close()
+
                 return render_template("users/signup.html", routes=routes, user=local_user,
                                        error_message=f'Username {test_user.username} already exists')
             except NameError:
-                local_user = User(username=username, password=password)
-                local_user.create(connection)
+                local_user = User.create(connection, username=username, password=password)
                 token = Token(local_user.user_id)
                 resp = make_response(redirect(routes["home"]))
                 token.create(connection)
-                connection.close()
+
                 resp.set_cookie('token', token.token_id)
                 print(f'User {username} created')
                 return resp
@@ -295,11 +305,11 @@ def change_password():
 
 
     if not local_user:
-        connection.close()
+
         return redirect(routes["home"])
     else:
         if request.method == 'GET':
-            connection.close()
+
             return render_template("settings/password.html", routes=routes, user=local_user, error_message=None)
         else:
             old_password = request.form.get('old_password')
@@ -308,12 +318,11 @@ def change_password():
 
             password_error = check_password(new_password, verify_new_password, old_password)
             if password_error is not None:
-                connection.close()
-                return render_template("users/signup.html", routes=routes, user=local_user,
+                return render_template("settings/password.html", routes=routes, user=local_user,
                                        error_message=password_error)
 
-            if old_password == local_user.password:
-                local_user.change_password(connection, new_password)
+            if old_password == local_user.password_hash:
+                local_user.password_hash = new_password
                 print(f"{local_user.username} changed their password")
                 return redirect(routes["user"].format(local_user.username))
             else:
@@ -332,7 +341,7 @@ def logout():
     local_user = check_token(connection, request.cookies)
 
     if not local_user:
-        connection.close()
+
         return redirect(routes["home"])
     else:
         resp = redirect(routes["home"])
@@ -342,7 +351,7 @@ def logout():
         connection.commit()
         cursor.close()
         resp.delete_cookie('token')
-        connection.close()
+
         return resp
 
 @app.route(API["like_post"].format("<int:post_id>"), methods=['POST'])
@@ -351,10 +360,12 @@ def like_post(post_id):
     local_user = check_token(connection, request.cookies)
     try:
         json_data = request.get_json()
-        liked_post = Post.read(connection, post_id)
-
         try:
-            liked_post.like(connection, local_user, bool(json_data.get("like")))
+            if bool(json_data.get("like")):
+                local_user.like(post_id)
+            else:
+                local_user.unlike(post_id)
+
             response = {
             "message": "Success"
             }
@@ -363,7 +374,7 @@ def like_post(post_id):
                 "message": "Cannot be done"
             }
         return jsonify(response)
-    except NameError:
+    except NameError as e:
         abort(404, "Post not found")
 
 @app.route(API["follow_user"].format("<username>"), methods=['POST'])
@@ -372,10 +383,13 @@ def follow_user(username):
     local_user = check_token(connection, request.cookies)
     try:
         json_data = request.get_json()
-        followed_user = User.read(connection, username)
+        followed_user = User.read(connection, username).user_id
 
         try:
-            followed_user.add_follower(connection, local_user, bool(json_data.get("follow")))
+            if bool(json_data.get("follow")):
+                local_user.follow(followed_user)
+            else:
+                local_user.unfollow(followed_user)
             response = {
             "message": "Success"
             }
@@ -409,7 +423,7 @@ def reply_comment(root_comment_id):
         root_comment = Comment.read(connection, root_comment_id)
         c = Comment(content, local_user.user_id, root_comment.comment_page, root_comment=root_comment_id)
         c.publish(connection, local_user)
-        connection.close()
+
         return redirect(routes["post"].format(root_comment.comment_page))
     except NameError:
         abort(404, "Post not found")
@@ -417,3 +431,4 @@ def reply_comment(root_comment_id):
 @app.route("/static/<path:file>")
 def static_file(file):
     return static_file(file)
+

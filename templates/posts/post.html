@@ -6,7 +6,7 @@
     <h2>Posted by <a href="{{ author.url }}"> {{ author.username }}</a> at {{ post.date_posted.strftime("%Y-%m-%d %H:%M:%S") }}</h2>
     <h3><span id="like-count">{{ post.likes }}</span> Likes </h3>
     {% if user %}
-    <button id="like" data-id="{{ post.post_id }}" data-like="{{ not post.post_id in user.liked_posts }}"></button><br/>
+    <button id="like" data-id="{{ post.post_id }}" data-like="{{ not user.is_liked(post.post_id) }}"></button><br/>
         {% if user.user_id == author.user_id %}
             <a href="{{ request.url + "\edit" }}">Edit Post...</a>
         {% endif %}

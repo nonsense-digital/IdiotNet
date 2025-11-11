@@ -28,21 +28,10 @@ class Post:
             cursor.execute(query, data)
             connection.commit()
             self.post_id = cursor.fetchone()[0]
-            user.add_post(connection, self.post_id)
             cursor.close()
             self.url = routes["post"].format(self.post_id)
         else:
             raise Exception("Post is already published")
-
-    def like(self, connection, user, add_like:bool=True):
-        user.like_post(connection, self.post_id, add_like)
-        cursor = connection.cursor()
-        cursor.execute("SELECT likes from posts WHERE id=%s", (self.post_id,))
-        self.likes = int(cursor.fetchone()[0])
-        self.likes += 1 if add_like else -1
-        cursor.execute("UPDATE posts SET likes = %s WHERE id = %s", (self.likes, self.post_id,))
-        connection.commit()
-        cursor.close()
 
     def edit_post(self, connection, title, content):
         cursor = connection.cursor()
