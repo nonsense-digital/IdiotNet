@@ -4,7 +4,7 @@
         <tr>
             <th><a href="{{ routes["post"].format(post.post_id) }}">{{ post.title[:12] }}</a></th>
             <th>{{ post.content[:15] }}</th>
-            <th><a href="{{ routes["user"].format(post.author_name) }}">{{ post.author_name }}</a></th>
+            <th><a href="{{ post.author.url }}">{{ post.author.username }}</a></th>
             <th>{{ post.date_posted.strftime("%Y-%m-%d %H:%M:%S.%f") }}</th>
             <th>{{ post.likes }}</th>
             <th>{{ post.comments|length }}</th>

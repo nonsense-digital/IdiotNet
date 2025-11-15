@@ -6,11 +6,11 @@
         </form></li>
     {% endif %}
     {% for comment in post.comments|reverse %}
-        <li><a href="{{ routes["user"].format(comment.author_name) }}">{{ comment.author_name }}</a>: {{ comment.content }}
+        <li><a href="{{ routes["user"].format(comment.author.username) }}">{{ comment.author.username }}</a>: {{ comment.content }}
             <ul class="replies">
                 {% for reply in comment.replies %}
                     <li>
-                        <a href="{{ routes["user"].format(reply.author_name) }}">{{ reply.author_name }}</a>: {{ reply.content }}
+                        <a href="{{ routes["user"].format(reply.author.username) }}">{{ reply.author.username }}</a>: {{ reply.content }}
                     </li>
                 {% endfor %}
                 {% if user %}

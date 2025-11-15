@@ -5,7 +5,7 @@
     <h1>{{ search_user.username }}</h1>
     <h3><span id="follower-count">{{ search_user.follower_ids|length }}</span> Followers</h3>
     {% if user %}
-    <button id="follow" data-username="{{ search_user.username }}" data-follow="{{ not user.user_id in search_user.follower_ids }}"></button>
+    <button id="follow" data-username="{{ search_user.username }}" data-follow="{{ not user.is_followed(search_user.user_id) }}"></button>
     {% endif %}
     <h2>About</h2>
     <pre id="about">{{ search_user.bio }}</pre>

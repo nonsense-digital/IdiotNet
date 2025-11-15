@@ -1,95 +1,174 @@
 import datetime
-
 from routes import routes
+from comment import Comment
+from enum import Enum
+from author import Author
 
+class SortMethod(Enum):
+    LATEST = 0
+    OLDEST = 1
+    POPULAR = 2
 
 
 class Post:
-    def __init__(self, title, content, author:int):
-        self.post_id = -1
-        self.title = title
-        self.content = content
-        self.author_id = author
-        self.author_name = None
-        self.date_posted = None
-        self.is_published = False
-        self.likes = 0
-        self.url = None
-        self.comments = []
+    # --- CONSTRUCTORS ---
+    # These are different ways that a Post object can be created.
 
-    def publish(self, connection, user):
-        if not self.is_published:
-            self.date_posted = datetime.datetime.now()
-            self.is_published = True
-            self.author_name = user.username
-            cursor = connection.cursor()
-            query = "INSERT INTO posts (title, content, author, date_posted, likes) VALUES (%s, %s, %s, %s, %s) RETURNING id"
-            data = (self.title, self.content, self.author_id, self.date_posted, self.likes,)
-            cursor.execute(query, data)
-            connection.commit()
-            self.post_id = cursor.fetchone()[0]
-            cursor.close()
-            self.url = routes["post"].format(self.post_id)
-        else:
-            raise Exception("Post is already published")
+    # Creates an empty post object.
+    # If you are trying to create a new post in the database, use publish() instead.
+    # If you are trying to read a pre-existing post from the database, use read() instead
+    # If you want a list of the latest posts, use latest()
+    def __init__(self, post_id:int):
+        self.post_id = post_id
+        self.connection = None
+        self.__title__ = None
+        self.__content__ = None
+        self.__author__ = None
+        self.__date_posted__ = None
 
-    def edit_post(self, connection, title, content):
+    # Creates a new post, adds it to the database, and returns the resulting post object
+    @staticmethod
+    def publish(connection, title:str, content:str, author:int):
+        # insert a new post into the database
+        date_posted = datetime.datetime.now()
         cursor = connection.cursor()
-        cursor.execute("UPDATE posts set (title, content) = (%s, %s) WHERE id=%s", (title, content, (self.post_id,)))
+        query = "INSERT INTO posts (title, content, author, date_posted) VALUES (%s, %s, %s, %s) RETURNING id"
+        data = (title, content, author, date_posted)
+        cursor.execute(query, data)
         connection.commit()
+
+
+        # create the new post object
+        p = Post(cursor.fetchone()[0])
+        p.connection = connection
+        p.__title__ = title
+        p.__content__ = content
+        p.__author__ = Author(connection, author)
+        p.__date_posted__ = date_posted
         cursor.close()
-        self.title = title
-        self.content = content
-
-
-    @staticmethod
-    def read(connection, post_id:int):
-        cursor = connection.cursor()
-        cursor.execute("SELECT * FROM posts WHERE id = %s", (post_id,))
-        data = cursor.fetchone()
-        if data is None:
-            raise NameError("Post not found")
-        else:
-            return Post.record_to_object(connection, data)
-
-    @staticmethod
-    def record_to_object(connection, record):
-        from user import User
-        p = Post(title=record[1], content=record[2], author=record[3])
-        p.post_id = record[0]
-        p.author_name = User.read(connection, record[3]).username
-        p.date_posted = record[4]
-        p.likes = record[5]
-        p.is_published = True
-        p.url = routes["post"].format(p.post_id)
-        p.comments = []
-
-        # get comments (first comment in 1000 lines of code lol)
-        from comment import Comment
-        cursor = connection.cursor()
-        cursor.execute("SELECT id FROM comments WHERE comment_page = %s AND comment_type = 0 AND root_comment = -1 ORDER BY date_posted",
-                       (p.post_id,))
-        p.comments = []
-        for comment_id in cursor.fetchall():
-            try:
-                p.comments.append(Comment.read(connection, comment_id[0]))
-            except NameError:
-                pass
         return p
 
+    # Reads a post from the database and returns it as a post object
     @staticmethod
-    def latest(connection, count:int, offset:int=0, sort_by:str="latest"):
+    def read(connection, post_id:int):
+        try:
+            p = Post(post_id)
+            p.connection = connection
+            p.update_values()
+            return p
+        except NameError:
+            raise NameError("Post not found")
+        except TypeError:
+            raise NameError("Post not found")
+
+    # Gets a list of posts, sorted by age or by popularity
+    @staticmethod
+    def latest(connection, count:int, offset:int=0, sort_by:SortMethod=SortMethod.LATEST):
         cursor = connection.cursor()
-        if sort_by == "latest":
-            query = "SELECT * FROM posts ORDER BY date_posted DESC OFFSET %s LIMIT %s"
-        elif sort_by == "popular":
-            query = "SELECT * FROM posts ORDER BY likes DESC OFFSET %s LIMIT %s"
+        if sort_by == SortMethod.LATEST:
+            query = "SELECT id FROM posts ORDER BY date_posted DESC OFFSET %s LIMIT %s"
+        elif sort_by == SortMethod.OLDEST:
+            query = "SELECT id FROM posts ORDER BY date_posted OFFSET %s LIMIT %s"
+        elif sort_by == SortMethod.POPULAR:
+            raise NotImplementedError("Sort by popularity not implemented.")
         else:
-            query = "SELECT * FROM posts ORDER BY date_posted DESC OFFSET %s LIMIT %s"
+            raise ValueError("Sorting method not specified.")
         cursor.execute(query, (offset, count))
         data = cursor.fetchall()
         posts = []
         for record in data:
-            p = Post.record_to_object(connection, record)
+            p = Post.read(connection, record[0])
             posts.append(p)
         return posts
+
+    # --- GETTERS AND SETTERS ----
+    # When a Post object's atomic properties (title, content, date posted, etc.) are called, a getter function retrieves them from its private field.
+    # When an atomic value is modified, the change is sent to the database with a setter function.
+    # There are also getters that query the database for list objects (comments and attachments) but no setters, as these are read-only.
+
+    @property
+    def title(self):
+        return self.__title__
+
+    @title.setter
+    def title(self, title):
+        cursor = self.connection.cursor()
+        cursor.execute("UPDATE posts set title = %s where id = %s", (title, self.post_id))
+        self.__title__ = title
+        cursor.close()
+
+    @property
+    def content(self):
+        return self.__content__
+
+    @content.setter
+    def content(self, content):
+        cursor = self.connection.cursor()
+        cursor.execute("UPDATE posts set content = %s where id = %s", (content, self.post_id))
+        self.__content__ = content
+        cursor.close()
+
+    @property
+    def author(self):
+        return self.__author__
+
+    @author.setter
+    def author(self, author):
+        cursor = self.connection.cursor()
+        cursor.execute("UPDATE posts set author = %s where id = %s", (author, self.post_id))
+        self.__author__ = Author(self.connection, author)
+        cursor.close()
+
+    @property
+    def date_posted(self):
+        return self.__date_posted__
+
+    @date_posted.setter
+    def date_posted(self, date_posted):
+        cursor = self.connection.cursor()
+        cursor.execute("UPDATE posts set date_posted = %s where id = %s", (date_posted, self.post_id))
+        self.__date_posted__ = date_posted
+        cursor.close()
+
+    @property
+    def url(self):
+        return routes["post"].format(self.post_id)
+
+    # updates all atomic values
+    def update_values(self):
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT * FROM posts WHERE id = %s", (self.post_id,))
+        try:
+            result = cursor.fetchall()[0]
+            self.__title__ = result[1]
+            self.__content__ = result[2]
+            self.__author__ = Author(self.connection, result[3])
+            self.__date_posted__ = result[4]
+        except IndexError:
+            raise NameError("Post not found")
+
+    # Gets the post's comments from the database
+    @property
+    def comments(self):
+        cursor = self.connection.cursor()
+        cursor.execute(
+            "SELECT id FROM comments WHERE comment_page = %s AND comment_type = 0 AND root_comment = -1 ORDER BY date_posted",
+            (self.post_id,))
+        comments = []
+        result = cursor.fetchall()
+        for comment_id in result:
+            try:
+                comments.append(Comment.read(self.connection, comment_id[0]))
+            except NameError:
+                pass
+        cursor.close()
+        return comments
+
+    # gets the likes of the post
+    @property
+    def likes(self):
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT id from likes WHERE liked = %s", (self.post_id,))
+        results = cursor.fetchall()
+        cursor.close()
+        return len(results)

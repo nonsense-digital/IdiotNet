@@ -3,14 +3,14 @@
 {% block title %}IdiotNet | {{ post.title }}{% endblock %}
 {% block content %}
     <h1>{{ post.title }}</h1>
-    <h2>Posted by <a href="{{ author.url }}"> {{ author.username }}</a> at {{ post.date_posted.strftime("%Y-%m-%d %H:%M:%S") }}</h2>
+    <h2>Posted by <a href="{{ post.author.url }}"> {{ post.author.username }}</a> at {{ post.date_posted.strftime("%Y-%m-%d %H:%M:%S") }}</h2>
     <h3><span id="like-count">{{ post.likes }}</span> Likes </h3>
     {% if user %}
     <button id="like" data-id="{{ post.post_id }}" data-like="{{ not user.is_liked(post.post_id) }}"></button><br/>
-        {% if user.user_id == author.user_id %}
+        {% if user.user_id == post.author.user_id %}
             <a href="{{ request.url + "\edit" }}">Edit Post...</a>
         {% endif %}
     {% endif %}
-    <div id="post-content">{{ post.content|safe }}</div>
+    <div id="post-content">{{ post.content }}</div>
     {% include 'comments.html' %}
 {% endblock %}

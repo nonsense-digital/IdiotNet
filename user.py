@@ -34,7 +34,6 @@ def check_password(password: str, verify_password: str, previous_password: str =
     else:
         return None
 
-
 class User:
     # --- CONSTRUCTORS ---
     # These are different ways that a User object can be created.
@@ -82,7 +81,7 @@ class User:
 
     # Reads a user from the database, either by user id or by username
     @staticmethod
-    def read(connection, identifier):
+    def read(connection, identifier: int | str):
         # Try to read the data, if it doesn't exist then throw a NameError.
         try:
             # If a username instead of user id was provided, find the corresponding user id
@@ -191,7 +190,7 @@ class User:
         # convert to post objects
         posts = []
         for post_id in result:
-            posts.append(Post.read(self.connection, post_id))
+            posts.append(Post.read(self.connection, post_id[0]))
         return posts
 
     # Gets the user's liked posts from the database, returning a list of Post objects
@@ -205,7 +204,10 @@ class User:
         # convert to post objects
         posts = []
         for post_id in result:
-            posts.append(Post.read(self.connection, post_id))
+            try:
+                posts.append(Post.read(self.connection, post_id[0]))
+            except NameError:
+                self.unlike(post_id)
         return posts
 
     # Gets the user's followers, returning a list of User objects
@@ -259,7 +261,7 @@ class User:
     # --- USER-SPECIFIC METHODS ---
     # These are various user-specific actions one can perform.
 
-    def is_liked(self, post_id):
+    def is_liked(self, post_id: int):
         cursor = self.connection.cursor()
         try:
             cursor.execute("SELECT id from likes WHERE liker = %s AND liked = %s", (self.user_id, post_id))
@@ -269,18 +271,26 @@ class User:
         except Exception:
             return False
 
+    def is_followed(self, user_id: int):
+        cursor = self.connection.cursor()
+        try:
+            cursor.execute("SELECT id from follows WHERE follower = %s AND following = %s", (self.user_id, user_id))
+            result = cursor.fetchall()
+            cursor.close()
+            return len(result) > 0
+        except Exception:
+            return False
+
 
     # Make the user follow another user
-    def follow(self, user_id):
+    def follow(self, user_id: int):
         cursor = self.connection.cursor()
         # check if the user to follow exists
         cursor.execute("SELECT username FROM users WHERE id = %s", (user_id,))
         result = cursor.fetchall()
         if len(result) != 0:
             # check to make sure user hasn't been followed yet
-            cursor.execute("SELECT id from follows WHERE follower = %s AND following = %s", (self.user_id, user_id))
-            result = cursor.fetchall()
-            if len(result) == 0:
+            if not self.is_followed(user_id):
                 # add the follower relationship to the database
                 date_followed = datetime.datetime.now()
                 cursor.execute("INSERT INTO follows (follower, following, date_followed) VALUES (%s, %s, %s) ", (self.user_id, user_id, date_followed))
@@ -294,7 +304,7 @@ class User:
             raise NameError("User doesn't exist")
 
     # Make the user unfollow another user
-    def unfollow(self, user_id):
+    def unfollow(self, user_id:int):
         cursor = self.connection.cursor()
         try:
             # attempt to remove the follower relationship
@@ -308,7 +318,7 @@ class User:
 
 
     # Make the user like a post
-    def like(self, post_id):
+    def like(self, post_id:int):
         # check if the post to like exists
         cursor = self.connection.cursor()
         if not self.is_liked(post_id):
@@ -319,7 +329,6 @@ class User:
                 # attempt to add the follower relationship
                 date_liked = datetime.datetime.now()
                 cursor.execute("INSERT INTO likes (liker, liked, date_liked) VALUES (%s, %s, %s)", (self.user_id, post_id, date_liked))
-                cursor.execute("UPDATE posts SET likes = likes + 1 WHERE id = %s", (post_id,)) # to be removed after posts revamp?
                 self.connection.commit()
                 cursor.close()
             else:
@@ -330,12 +339,11 @@ class User:
             raise NameError("User doesn't exist")
 
     # Make the user unlike a post
-    def unlike(self, post_id):
+    def unlike(self, post_id:int):
         cursor = self.connection.cursor()
         try:
             # attempt to remove the follower relationship
             cursor.execute("DELETE FROM likes WHERE liker = %s AND liked = %s", (self.user_id, post_id))
-            cursor.execute("UPDATE posts SET likes = likes - 1 WHERE id = %s", (post_id,))  # to be removed after posts revamp?
             self.connection.commit()
             cursor.close()
         except NameError:

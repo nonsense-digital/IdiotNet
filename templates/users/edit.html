@@ -4,7 +4,7 @@
 {% block content %}
     <h1>Edit User Bio</h1>
     <form action="{{ request.url }}" method="POST">
-        <textarea id="content" name="content" rows="5" cols="40" placeholder="I am a total loser..."></textarea><br/>
+        <textarea id="content" name="content" rows="5" cols="40" placeholder="I am a total loser...">{{ user.bio }}</textarea><br/>
         <input type="submit" value="Submit">
     </form>
 {% endblock %}

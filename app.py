@@ -1,13 +1,11 @@
 from flask import Flask, request, render_template, redirect, make_response, abort, jsonify
 
 from comment import Comment
-from post import Post
+from post import Post, SortMethod
 from user import User, check_username, check_password
 from routes import routes, API
 from auth_token import Token
 import os
-import markdown
-from markupsafe import Markup
 from dotenv import load_dotenv
 import psycopg2
 
@@ -30,6 +28,23 @@ def get_db_connection():
     global global_connection
     return global_connection
 
+# check if DB version is correct
+SEVER_VERSION = "1.0"
+cursor = global_connection.cursor()
+try:
+    cursor.execute("SELECT value FROM config WHERE key = 'version'")
+    database_version = cursor.fetchone()[0]
+    cursor.close()
+    if database_version != "1.0":
+        cursor.close()
+        global_connection.close()
+        raise TypeError(f"Expected database version {SEVER_VERSION}, got {database_version} instead.")
+except Exception as e:
+    cursor.close()
+    global_connection.close()
+    raise TypeError("Database version not found. This either means your database is older than 1.0, or you deleted the version number in the config table.")
+
+
 # Set up Flask app
 app = Flask(__name__)
 
@@ -45,7 +60,7 @@ def shutdown():
 def latest_posts(count:int, offset=0, search_user:User=None, sort_by="latest", filter=None) -> tuple:
     connection = get_db_connection()
     if not search_user:
-        posts = Post.latest(connection, count, offset*count, sort_by)
+        posts = Post.latest(connection, count, offset*count, SortMethod.LATEST)
     else:
         if filter == "liked":
             posts = search_user.liked_posts
@@ -130,10 +145,7 @@ def post(post_id):
     local_user = check_token(connection, request.cookies)
     try:
         read_post = Post.read(connection, post_id)
-        read_post.content = Markup(markdown.markdown(read_post.content))
-        author = User.read(connection, read_post.author_id)
-
-        return render_template('posts/post.html', routes=routes, user=local_user, post=read_post, author=author, API=API)
+        return render_template('posts/post.html', routes=routes, user=local_user, post=read_post, API=API)
     except NameError:
         abort(404, "Post not found")
 
@@ -200,8 +212,7 @@ def new_post():
             title = request.form.get('title')
             content = request.form.get('content')
 
-            staged_post = Post(title, content, local_user.user_id)
-            staged_post.publish(connection, local_user)
+            staged_post = Post.publish(connection, title, content, local_user.user_id)
             print(f"{local_user.username} created post #{staged_post.post_id}")
             return redirect(staged_post.url)
 
@@ -211,12 +222,11 @@ def edit_post(post_id):
     local_user = check_token(connection, request.cookies)
 
     if not local_user:
-
         return redirect(routes["login"])
     else:
         read_post = Post.read(connection, post_id)
 
-        if read_post.author_id == local_user.user_id:
+        if read_post.author.user_id == local_user.user_id:
             if request.method == 'GET':
 
                 return render_template("posts/edit.html", routes=routes, user=local_user, post=read_post)
@@ -224,7 +234,8 @@ def edit_post(post_id):
                 title = request.form.get('title')
                 content = request.form.get('content')
 
-                read_post.edit_post(connection, title, content)
+                read_post.title = title
+                read_post.content = content
                 print(f"{local_user.username} edited post #{post_id}")
                 return redirect(read_post.url)
         else:
@@ -398,7 +409,7 @@ def follow_user(username):
                 "message": "Cannot be done"
             }
         return jsonify(response)
-    except NameError:
+    except NameError as e:
         abort(404, "User not found")
 
 @app.route(API["comment_post"].format("<int:post_id>"), methods=['POST'])
@@ -407,8 +418,7 @@ def comment_post(post_id):
     local_user = check_token(connection, request.cookies)
     try:
         content = request.form.get("content")
-        c = Comment(content, local_user.user_id, post_id)
-        c.publish(connection, local_user)
+        c = Comment.publish(connection, content, local_user.user_id, post_id)
         print(f'{local_user.username} commented on post {post_id}')
         return redirect(routes["post"].format(post_id))
     except NameError:
@@ -421,8 +431,7 @@ def reply_comment(root_comment_id):
     try:
         content = request.form.get("content")
         root_comment = Comment.read(connection, root_comment_id)
-        c = Comment(content, local_user.user_id, root_comment.comment_page, root_comment=root_comment_id)
-        c.publish(connection, local_user)
+        c = Comment.publish(connection, content, local_user.user_id, root_comment.comment_page, root_comment=root_comment_id)
 
         return redirect(routes["post"].format(root_comment.comment_page))
     except NameError:
