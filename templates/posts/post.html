@@ -11,6 +11,6 @@
             <a href="{{ request.url + "\edit" }}">Edit Post...</a>
         {% endif %}
     {% endif %}
-    <div id="post-content">{{ post.content }}</div>
+    <div id="post-content">{{ post.content|safe }}</div>
     {% include 'comments.html' %}
 {% endblock %}

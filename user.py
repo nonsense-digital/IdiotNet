@@ -184,7 +184,7 @@ class User:
     def posts(self):
         # query a list of post ids
         cursor = self.connection.cursor()
-        cursor.execute("SELECT id FROM posts WHERE author = %s", (self.user_id,))
+        cursor.execute("SELECT id FROM posts WHERE author = %s ORDER BY date_posted DESC", (self.user_id,))
         result = cursor.fetchall()
 
         # convert to post objects

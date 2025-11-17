@@ -63,9 +63,9 @@ def latest_posts(count:int, offset=0, search_user:User=None, sort_by="latest", f
         posts = Post.latest(connection, count, offset*count, SortMethod.LATEST)
     else:
         if filter == "liked":
-            posts = search_user.liked_posts
+            posts = search_user.liked_posts[offset*count:offset*count+count]
         else:
-            posts = search_user.posts
+            posts = search_user.posts[offset*count:offset*count+count]
 
     return posts
 
@@ -158,7 +158,6 @@ def check_token(connection, cookies):
         except NameError:
             return None
     else:
-        #cookies.remove('token')
         return None
 
 @app.route(routes["login"], methods=['GET', 'POST'])
@@ -183,9 +182,9 @@ def login():
 
                 if local_user.password_hash == password:
                     print(f"User {username} logged in successfully")
-                    token = Token(local_user.user_id)
+                    token = Token.create(connection, local_user.user_id)
                     resp = make_response(redirect(routes["home"]))
-                    token.create(connection)
+
 
                     resp.set_cookie('token', token.token_id)
                     return resp
@@ -298,9 +297,8 @@ def signup():
                                        error_message=f'Username {test_user.username} already exists')
             except NameError:
                 local_user = User.create(connection, username=username, password=password)
-                token = Token(local_user.user_id)
+                token = Token.create(connection, local_user.user_id)
                 resp = make_response(redirect(routes["home"]))
-                token.create(connection)
 
                 resp.set_cookie('token', token.token_id)
                 print(f'User {username} created')
