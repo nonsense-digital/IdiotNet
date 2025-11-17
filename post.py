@@ -25,6 +25,7 @@ class Post:
         self.__content__ = None
         self.__author__ = None
         self.__date_posted__ = None
+        self.__date_modified__ = None
 
     # Creates a new post, adds it to the database, and returns the resulting post object
     @staticmethod
@@ -131,6 +132,17 @@ class Post:
         cursor.close()
 
     @property
+    def date_modified(self):
+        return self.__date_modified__
+
+    @date_modified.setter
+    def date_modified(self, date_modified):
+        cursor = self.connection.cursor()
+        cursor.execute("UPDATE posts set date_modified = %s where id = %s", (date_modified, self.post_id))
+        self.__date_modified__ = date_modified
+        cursor.close()
+
+    @property
     def url(self):
         return routes["post"].format(self.post_id)
 
@@ -144,6 +156,7 @@ class Post:
             self.__content__ = result[2]
             self.__author__ = Author(self.connection, result[3])
             self.__date_posted__ = result[4]
+            self.__date_modified__ = result[5]
         except IndexError:
             raise NameError("Post not found")
 

@@ -1,3 +1,5 @@
+import datetime
+
 from flask import Flask, request, render_template, redirect, make_response, abort, jsonify
 
 from comment import Comment
@@ -227,7 +229,6 @@ def edit_post(post_id):
 
         if read_post.author.user_id == local_user.user_id:
             if request.method == 'GET':
-
                 return render_template("posts/edit.html", routes=routes, user=local_user, post=read_post)
             else:
                 title = request.form.get('title')
@@ -235,6 +236,7 @@ def edit_post(post_id):
 
                 read_post.title = title
                 read_post.content = content
+                read_post.date_modified = datetime.datetime.now()
                 print(f"{local_user.username} edited post #{post_id}")
                 return redirect(read_post.url)
         else:

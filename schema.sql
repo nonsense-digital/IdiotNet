@@ -39,17 +39,18 @@ create table tokens
     valid_until timestamp not null
 );
 
-create table users
+create table public.posts
 (
-    id            integer generated always as identity (minvalue 0),
-    username      varchar(15)  not null,
-    email         varchar(60),
-    date_created  timestamp    not null,
-    password_hash varchar(255) not null,
-    bio           text default ''::text,
-    constraint users_pk
-        primary key (id, username)
+    id            integer generated always as identity (minvalue 0)
+        constraint posts_pk
+            primary key,
+    title         text default 'Untitled Post'::text not null,
+    content       text default ''::text              not null,
+    author        integer                            not null,
+    date_posted   timestamp,
+    date_modified timestamp
 );
+
 
 create table config
 (

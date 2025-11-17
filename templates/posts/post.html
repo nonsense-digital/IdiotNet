@@ -3,7 +3,11 @@
 {% block title %}IdiotNet | {{ post.title }}{% endblock %}
 {% block content %}
     <h1>{{ post.title }}</h1>
-    <h2>Posted by <a href="{{ post.author.url }}"> {{ post.author.username }}</a> at {{ post.date_posted.strftime("%Y-%m-%d %H:%M:%S") }}</h2>
+    <h2><a href="{{ post.author.url }}"> {{ post.author.username }}</a></h2>
+    <p class="small_info">Posted at {{ post.date_posted.strftime("%Y-%m-%d %H:%M") }}</p>
+    {% if post.date_modified %}
+        <p class="small_info">Edited at {{ post.date_modified.strftime("%Y-%m-%d %H:%M") }}</p>
+    {% endif %}
     <h3><span id="like-count">{{ post.likes }}</span> Likes </h3>
     {% if user %}
     <button id="like" data-id="{{ post.post_id }}" data-like="{{ not user.is_liked(post.post_id) }}"></button><br/>
@@ -11,6 +15,6 @@
             <a href="{{ request.url + "\edit" }}">Edit Post...</a>
         {% endif %}
     {% endif %}
-    <div id="post-content">{{ post.content|safe }}</div>
+    <div id="post-content">{{ post.content }}</div>
     {% include 'comments.html' %}
 {% endblock %}
