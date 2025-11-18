@@ -177,6 +177,23 @@ class Post:
         cursor.close()
         return comments
 
+    # Gets all post's comments, including replies
+    @property
+    def all_comments(self):
+        cursor = self.connection.cursor()
+        cursor.execute(
+            "SELECT id FROM comments WHERE comment_page = %s AND comment_type = 0 ORDER BY date_posted",
+            (self.post_id,))
+        comments = []
+        result = cursor.fetchall()
+        for comment_id in result:
+            try:
+                comments.append(Comment.read(self.connection, comment_id[0]))
+            except NameError:
+                pass
+        cursor.close()
+        return comments
+
     # gets the likes of the post
     @property
     def likes(self):

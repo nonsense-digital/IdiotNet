@@ -7,7 +7,7 @@
             <th><a href="{{ post.author.url }}">{{ post.author.username }}</a></th>
             <th>{{ post.date_posted.strftime("%Y-%m-%d %H:%M:%S.%f") }}</th>
             <th>{{ post.likes }}</th>
-            <th>{{ post.comments|length }}</th>
+            <th>{{ post.all_comments|length }}</th>
         </tr>
     {% endfor %}
 </table>
