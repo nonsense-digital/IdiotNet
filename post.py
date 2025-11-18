@@ -9,6 +9,13 @@ class SortMethod(Enum):
     OLDEST = 1
     POPULAR = 2
 
+# make sure a post title is not empty (excluding spaces)
+def check_empty(text:str):
+    withoutSpaces = ""
+    for char in text:
+        if char != " ":
+            withoutSpaces += char
+    return withoutSpaces == ""
 
 class Post:
     # --- CONSTRUCTORS ---

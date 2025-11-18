@@ -3,6 +3,12 @@
 {% block title %}IdiotNet | New Post{% endblock %}
 {% block content %}
     <h1>New Post</h1>
+    {% if error_message %}
+        <div id="error">
+            <h3>Error</h3>
+            <p>{{ error_message }}</p>
+        </div>
+    {% endif %}
     <form action="/posts/new" method="POST">
         <label for="title">Title:</label><input name="title" type="text" id="title"><br>
         <textarea id="content" name="content" rows="5" cols="40" placeholder="Once upon a time..."></textarea><br/>

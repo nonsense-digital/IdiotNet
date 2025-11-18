@@ -3,7 +3,7 @@ import datetime
 from flask import Flask, request, render_template, redirect, make_response, abort, jsonify
 
 from comment import Comment
-from post import Post, SortMethod
+from post import Post, SortMethod, check_empty
 from user import User, check_username, check_password
 from routes import routes, API
 from auth_token import Token
@@ -213,6 +213,11 @@ def new_post():
             title = request.form.get('title')
             content = request.form.get('content')
 
+            if check_empty(title):
+                return render_template("posts/new.html", routes=routes, user=local_user, error_message="Title cannot be blank")
+            elif check_empty(content):
+                return render_template("posts/new.html", routes=routes, user=local_user, error_message="Content cannot be blank")
+
             staged_post = Post.publish(connection, title, content, local_user.user_id)
             print(f"{local_user.username} created post #{staged_post.post_id}")
             return redirect(staged_post.url)
@@ -233,6 +238,13 @@ def edit_post(post_id):
             else:
                 title = request.form.get('title')
                 content = request.form.get('content')
+
+                if check_empty(title):
+                    return render_template("posts/new.html", routes=routes, user=local_user,
+                                           error_message="Title cannot be blank")
+                elif check_empty(content):
+                    return render_template("posts/new.html", routes=routes, user=local_user,
+                                           error_message="Content cannot be blank")
 
                 read_post.title = title
                 read_post.content = content
