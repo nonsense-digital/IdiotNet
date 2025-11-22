@@ -10,6 +10,7 @@ from auth_token import Token
 import os
 from dotenv import load_dotenv
 import psycopg2
+import time
 
 # Set up database connection
 load_dotenv()
@@ -49,6 +50,31 @@ except Exception as e:
 
 # Set up Flask app
 app = Flask(__name__)
+
+# thanks to Tristin Porter for the rate limit system
+requests_log = {}
+temp_banned = []
+@app.before_request
+def limit_requests():
+    ip = request.remote_addr
+    now = time.time()
+    window = 1      # seconds
+    limit = 25       # max requests per window
+
+    if ip in temp_banned:
+        abort(403, description="You have been temporarily banned.")
+
+    if ip not in requests_log:
+        requests_log[ip] = []
+
+    # keep only timestamps within the window
+    requests_log[ip] = [t for t in requests_log[ip] if now - t < window]
+
+    if len(requests_log[ip]) >= limit:
+        temp_banned.append(ip)
+        abort(429, description="Too Many Requests")
+
+    requests_log[ip].append(now)
 
 @app.route('/shutdown', methods=['POST'])
 def shutdown():
