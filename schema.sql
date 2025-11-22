@@ -1,3 +1,25 @@
+create table attachments
+(
+    id      integer generated always as identity (minvalue 0)
+        constraint attachments_pk
+            primary key,
+    image   integer,
+    post    integer not null,
+    caption text default ''::text
+);
+
+create table users
+(
+    id            integer generated always as identity (minvalue 0),
+    username      varchar(15)  not null,
+    email         varchar(60),
+    date_created  timestamp    not null,
+    password_hash varchar(255) not null,
+    bio           text default ''::text,
+    constraint users_pk
+        primary key (id, username)
+);
+
 create table comments
 (
     id           integer generated always as identity (minvalue 0)
@@ -19,17 +41,6 @@ create table images
     filename      text default ''::text,
     author        integer not null,
     date_uploaded timestamp
-);
-
-create table posts
-(
-    id          integer generated always as identity (minvalue 0)
-        constraint posts_pk
-            primary key,
-    title       text default 'Untitled Post'::text not null,
-    content     text default ''::text              not null,
-    author      integer                            not null,
-    date_posted timestamp
 );
 
 create table tokens
@@ -81,16 +92,6 @@ create table likes
     liker      integer not null,
     liked      integer not null,
     date_liked timestamp
-);
-
-create table attachments
-(
-    id      integer generated always as identity (minvalue 0)
-        constraint attachments_pk
-            primary key,
-    image   integer,
-    post    integer not null,
-    caption text default ''::text
 );
 
 
