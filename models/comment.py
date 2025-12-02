@@ -1,5 +1,5 @@
 import datetime
-from author import Author
+from models.author import Author
 
 class Comment:
     # --- CONSTRUCTORS ---

@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import uuid
 
-from user import User
+from models.user import User
 
 class Token:
     # --- CONSTRUCTORS ---

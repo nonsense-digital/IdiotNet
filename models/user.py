@@ -1,6 +1,6 @@
 import datetime
 
-from post import Post
+from models.post import Post
 from routes import routes
 
 # Characters allowed in Usernames

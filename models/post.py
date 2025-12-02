@@ -1,8 +1,8 @@
 import datetime
 from routes import routes
-from comment import Comment
+from models.comment import Comment
 from enum import Enum
-from author import Author
+from models.author import Author
 
 class SortMethod(Enum):
     LATEST = 0

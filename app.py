@@ -1,57 +1,60 @@
+# a whole ton of imported modules
 import datetime
-
-from flask import Flask, request, render_template, redirect, make_response, abort, jsonify
-
-from comment import Comment
-from post import Post, SortMethod, check_empty
-from user import User, check_username, check_password
+from flask import Flask, request, render_template, redirect, make_response, abort, jsonify, current_app
+from models.comment import Comment
+from models.post import Post, SortMethod, check_empty
+from models.user import User, check_username, check_password
+from helpers.db import *
+from helpers.auth import *
 from routes import routes, API
-from auth_token import Token
+from models.auth_token import Token
 import os
 from dotenv import load_dotenv
-import psycopg2
 import time
-
-# Set up database connection
-load_dotenv()
-db_user = os.getenv("DB_USER")
-db_password = os.getenv("DB_PASSWORD")
-db_host = os.getenv("DB_HOST")
-db_port = os.getenv("DB_PORT")
-db_name = os.getenv("DB_NAME")
-global_connection = psycopg2.connect(
-        dbname=db_name,
-        user=db_user,
-        password=db_password,
-        host=db_host,
-        port=db_port
-    )
-
-def get_db_connection():
-    global global_connection
-    return global_connection
-
-# check if DB version is correct
-SEVER_VERSION = "1.0"
-cursor = global_connection.cursor()
-try:
-    cursor.execute("SELECT value FROM config WHERE key = 'version'")
-    database_version = cursor.fetchone()[0]
-    cursor.close()
-    if database_version != "1.0":
-        cursor.close()
-        global_connection.close()
-        raise TypeError(f"Expected database version {SEVER_VERSION}, got {database_version} instead.")
-except Exception as e:
-    cursor.close()
-    global_connection.close()
-    raise TypeError("Database version not found. This either means your database is older than 1.0, or you deleted the version number in the config table.")
-
+from logging.config import dictConfig
 
 # Set up Flask app
 app = Flask(__name__)
+load_dotenv()
 
-# thanks to Tristin Porter for the rate limit system
+# Configures logging for the Flask server
+# Code snippet from https://flask.palletsprojects.com/en/stable/logging/
+# And also from https://docs.python.org/3/library/logging.config.html#logging-config-dictschema
+if not os.path.isdir('log'):
+    os.makedirs('log')
+dictConfig({
+    'version': 1,
+    'formatters': {
+        'default': {
+            'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+        },
+        'plain': {
+            'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+        }
+    },
+    'handlers': {
+        'wsgi': {
+            'class': 'logging.StreamHandler',
+            'level': 'INFO',
+            'stream': 'ext://flask.logging.wsgi_errors_stream',
+            'formatter': 'default'
+        },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'level': 'INFO',
+            'formatter': 'plain',
+            'filename': './log/flask.log',
+            'maxBytes': 51200
+        },
+    },
+    'root': {
+        'level': 'INFO',
+        'handlers': ['wsgi', 'file']
+    }
+})
+
+# thanks to my good friend Tristin Porter for the rate limit system
+# https://github.com/nonsense-digital/IdiotNet/issues/1
 requests_log = {}
 temp_banned = []
 @app.before_request
@@ -62,6 +65,7 @@ def limit_requests():
     limit = 25       # max requests per window
 
     if ip in temp_banned:
+        current_app.logger.warning(f"[IP {request.remote_addr}] Cannot access the server due to a temporary IP ban.")
         abort(403, description="You have been temporarily banned.")
 
     if ip not in requests_log:
@@ -72,18 +76,14 @@ def limit_requests():
 
     if len(requests_log[ip]) >= limit:
         temp_banned.append(ip)
+        current_app.logger.warning(f"[IP {request.remote_addr}] IP has been temporarily banned for spamming.")
         abort(429, description="Too Many Requests")
 
     requests_log[ip].append(now)
 
-@app.route('/shutdown', methods=['POST'])
-def shutdown():
-    func = request.environ.get('werkzeug.server.shutdown')
-    if func is None:
-        raise RuntimeError('Not running with the Werkzeug Server')
-    get_db_connection().close()
-    func()
-    return 'Server shutting down...'
+@app.teardown_appcontext
+def teardown(exception):
+    close_db_connection()
 
 def latest_posts(count:int, offset=0, search_user:User=None, sort_by="latest", filter=None) -> tuple:
     connection = get_db_connection()
@@ -105,14 +105,14 @@ def paged_posts(page:int, search_user:User=None, sort_by="latest", filter=None) 
 @app.route(routes["home"])
 def index():
     connection = get_db_connection()
-    local_user = check_token(connection, request.cookies)
+    local_user = get_authenticated_user(connection, request.cookies)
     return render_template('index.html', routes=routes, user=local_user, latest_posts=latest_posts)
 
 @app.route(routes["latest"])
 def latest():
     sort_by = request.args.get("sort_by")
     connection = get_db_connection()
-    local_user = check_token(connection, request.cookies)
+    local_user = get_authenticated_user(connection, request.cookies)
     page = request.args.get('page')
     if not page:
         page = 1
@@ -125,19 +125,20 @@ def latest():
 def user(username):
     try:
         connection = get_db_connection()
-        local_user = check_token(connection, request.cookies)
+        local_user = get_authenticated_user(connection, request.cookies)
         search_user = User.read(connection, username)
         posts_latest = latest_posts(3, 0, search_user)
         posts_liked = latest_posts(3, 0, search_user, filter="liked")
         return render_template('users/user.html', routes=routes, posts_latest=posts_latest, posts_liked=posts_liked, user=local_user, search_user=search_user)
     except NameError:
+        current_app.logger.warning(f"[IP {request.remote_addr}] User {username} not found.")
         abort(404, "User not found")
 
 @app.route(routes["user_posts"].format("<username>"))
 def user_posts(username):
     try:
         connection = get_db_connection()
-        local_user = check_token(connection, request.cookies)
+        local_user = get_authenticated_user(connection, request.cookies)
         page = request.args.get('page')
         if not page:
             page = 1
@@ -148,13 +149,14 @@ def user_posts(username):
 
         return render_template('users/posts.html', type="Posts", routes=routes, user=local_user, posts=posts, is_last_page=is_last_page, page=page, search_user=search_user)
     except NameError:
+        current_app.logger.warning(f"[IP {request.remote_addr}] User {username} not found.")
         abort(404, "User not found")
 
 @app.route(routes["user_liked_posts"].format("<username>"))
 def user_liked_posts(username):
     try:
         connection = get_db_connection()
-        local_user = check_token(connection, request.cookies)
+        local_user = get_authenticated_user(connection, request.cookies)
         page = request.args.get('page')
         if not page:
             page = 1
@@ -165,33 +167,26 @@ def user_liked_posts(username):
 
         return render_template('users/posts.html', type="Liked Posts", routes=routes, user=local_user, posts=posts, is_last_page=is_last_page, page=page, search_user=search_user)
     except NameError:
+        current_app.logger.warning(f"[IP {request.remote_addr}] User {username} not found.")
         abort(404, "User not found")
 
 @app.route(routes["post"].format("<int:post_id>"))
 def post(post_id):
     connection = get_db_connection()
-    local_user = check_token(connection, request.cookies)
+    local_user = get_authenticated_user(connection, request.cookies)
     try:
         read_post = Post.read(connection, post_id)
         return render_template('posts/post.html', routes=routes, user=local_user, post=read_post, API=API)
     except NameError:
+        current_app.logger.warning(f"[IP {request.remote_addr}] Post {post_id} not found.")
         abort(404, "Post not found")
 
-def check_token(connection, cookies):
-    if 'token' in cookies:
-        try:
-            token = Token.read(connection, cookies['token'])
-            local_user = User.read(connection, token.user_id)
-            return local_user
-        except NameError:
-            return None
-    else:
-        return None
+
 
 @app.route(routes["login"], methods=['GET', 'POST'])
 def login():
     connection = get_db_connection()
-    local_user = check_token(connection, request.cookies)
+    local_user = get_authenticated_user(connection, request.cookies)
 
     if local_user:
 
@@ -226,7 +221,7 @@ def login():
 @app.route(routes["new_post"], methods=['GET', 'POST'])
 def new_post():
     connection = get_db_connection()
-    local_user = check_token(connection, request.cookies)
+    local_user = get_authenticated_user(connection, request.cookies)
 
     if not local_user:
 
@@ -251,7 +246,7 @@ def new_post():
 @app.route(routes["post_edit"].format("<post_id>"), methods=['GET', 'POST'])
 def edit_post(post_id):
     connection = get_db_connection()
-    local_user = check_token(connection, request.cookies)
+    local_user = get_authenticated_user(connection, request.cookies)
 
     if not local_user:
         return redirect(routes["login"])
@@ -284,7 +279,7 @@ def edit_post(post_id):
 @app.route(routes["user_edit"].format("<username>"), methods=['GET', 'POST'])
 def user_edit(username):
     connection = get_db_connection()
-    local_user = check_token(connection, request.cookies)
+    local_user = get_authenticated_user(connection, request.cookies)
 
     if not local_user:
 
@@ -303,7 +298,7 @@ def user_edit(username):
 @app.route(routes["signup"], methods=['GET', 'POST'])
 def signup():
     connection = get_db_connection()
-    local_user = check_token(connection, request.cookies)
+    local_user = get_authenticated_user(connection, request.cookies)
 
     if local_user:
 
@@ -350,7 +345,7 @@ def signup():
 @app.route(routes["change_password"], methods=['GET', 'POST'])
 def change_password():
     connection = get_db_connection()
-    local_user = check_token(connection, request.cookies)
+    local_user = get_authenticated_user(connection, request.cookies)
 
 
     if not local_user:
@@ -381,13 +376,13 @@ def change_password():
 @app.route(routes["about"])
 def about():
     connection = get_db_connection()
-    local_user = check_token(connection, request.cookies)
+    local_user = get_authenticated_user(connection, request.cookies)
     return render_template('about.html', routes=routes, user=local_user)
 
 @app.route(routes["logout"])
 def logout():
     connection = get_db_connection()
-    local_user = check_token(connection, request.cookies)
+    local_user = get_authenticated_user(connection, request.cookies)
 
     if not local_user:
 
@@ -406,7 +401,7 @@ def logout():
 @app.route(API["like_post"].format("<int:post_id>"), methods=['POST'])
 def like_post(post_id):
     connection = get_db_connection()
-    local_user = check_token(connection, request.cookies)
+    local_user = get_authenticated_user(connection, request.cookies)
     try:
         json_data = request.get_json()
         try:
@@ -429,7 +424,7 @@ def like_post(post_id):
 @app.route(API["follow_user"].format("<username>"), methods=['POST'])
 def follow_user(username):
     connection = get_db_connection()
-    local_user = check_token(connection, request.cookies)
+    local_user = get_authenticated_user(connection, request.cookies)
     try:
         json_data = request.get_json()
         followed_user = User.read(connection, username).user_id
@@ -453,10 +448,10 @@ def follow_user(username):
 @app.route(API["comment_post"].format("<int:post_id>"), methods=['POST'])
 def comment_post(post_id):
     connection = get_db_connection()
-    local_user = check_token(connection, request.cookies)
+    local_user = get_authenticated_user(connection, request.cookies)
     try:
         content = request.form.get("content")
-        c = Comment.publish(connection, content, local_user.user_id, post_id)
+        Comment.publish(connection, content, local_user.user_id, post_id)
         print(f'{local_user.username} commented on post {post_id}')
         return redirect(routes["post"].format(post_id))
     except NameError:
@@ -465,11 +460,11 @@ def comment_post(post_id):
 @app.route(API["reply_comment"].format("<int:root_comment_id>"), methods=['POST'])
 def reply_comment(root_comment_id):
     connection = get_db_connection()
-    local_user = check_token(connection, request.cookies)
+    local_user = get_authenticated_user(connection, request.cookies)
     try:
         content = request.form.get("content")
         root_comment = Comment.read(connection, root_comment_id)
-        c = Comment.publish(connection, content, local_user.user_id, root_comment.comment_page, root_comment=root_comment_id)
+        Comment.publish(connection, content, local_user.user_id, root_comment.comment_page, root_comment=root_comment_id)
 
         return redirect(routes["post"].format(root_comment.comment_page))
     except NameError:
