@@ -10,7 +10,6 @@ from routes import routes, API
 from models.auth_token import Token
 import os
 from dotenv import load_dotenv
-import time
 from logging.config import dictConfig
 
 # Set up Flask app
@@ -60,7 +59,7 @@ temp_banned = []
 @app.before_request
 def limit_requests():
     ip = request.remote_addr
-    now = time.time()
+    now = datetime.datetime.now(datetime.UTC)
     window = 1      # seconds
     limit = 25       # max requests per window
 
@@ -72,7 +71,7 @@ def limit_requests():
         requests_log[ip] = []
 
     # keep only timestamps within the window
-    requests_log[ip] = [t for t in requests_log[ip] if now - t < window]
+    requests_log[ip] = [t for t in requests_log[ip] if now - t < datetime.timedelta(seconds=window)]
 
     if len(requests_log[ip]) >= limit:
         temp_banned.append(ip)
@@ -80,6 +79,18 @@ def limit_requests():
         abort(429, description="Too Many Requests")
 
     requests_log[ip].append(now)
+
+@app.after_request
+def after_request(response):
+    # if the delete token flag is present, delete the invalid token
+    if hasattr(g, 'delete_token_cookie'):
+        response.delete_cookie('token')
+    elif 'token' in request.cookies:
+        connection = get_db_connection()
+        token = Token.read(connection, request.cookies['token'])
+        token.extend_lifetime(connection)
+        response.set_cookie("token", request.cookies['token'], max_age=datetime.timedelta(days=7))
+    return response
 
 @app.teardown_appcontext
 def teardown(exception):
@@ -189,8 +200,6 @@ def login():
     local_user = get_authenticated_user(connection, request.cookies)
 
     if local_user:
-
-        print(f"{local_user.username} is already logged in")
         return redirect(routes["home"])
     else:
         if request.method == 'GET':
@@ -204,7 +213,7 @@ def login():
                 local_user = User.read(connection, username)
 
                 if local_user.password_hash == password:
-                    print(f"User {username} logged in successfully")
+                    current_app.logger.info(f"[IP {request.remote_addr}] User {username} logged in successfully.")
                     token = Token.create(connection, local_user.user_id)
                     resp = make_response(redirect(routes["home"]))
 
@@ -212,10 +221,10 @@ def login():
                     resp.set_cookie('token', token.token_id)
                     return resp
                 else:
-                    print(f"User {username} failed to log in")
-
+                    current_app.logger.warning(f"[IP {request.remote_addr}] User {username} failed to log in")
                     return render_template("users/login.html", routes=routes, user=local_user, error_message=f'Incorrect password')
             except NameError:
+                current_app.logger.warning(f"[IP {request.remote_addr}] User {username} failed to log in")
                 return render_template("users/login.html", routes=routes, user=local_user, error_message=f'User {username} does not exist')
 
 @app.route(routes["new_post"], methods=['GET', 'POST'])
@@ -228,7 +237,6 @@ def new_post():
         return redirect(routes["login"])
     else:
         if request.method == 'GET':
-
             return render_template("posts/new.html", routes=routes, user=local_user)
         else:
             title = request.form.get('title')
@@ -240,7 +248,7 @@ def new_post():
                 return render_template("posts/new.html", routes=routes, user=local_user, error_message="Content cannot be blank")
 
             staged_post = Post.publish(connection, title, content, local_user.user_id)
-            print(f"{local_user.username} created post #{staged_post.post_id}")
+            current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} created post {staged_post.post_id}")
             return redirect(staged_post.url)
 
 @app.route(routes["post_edit"].format("<post_id>"), methods=['GET', 'POST'])
@@ -270,7 +278,7 @@ def edit_post(post_id):
                 read_post.title = title
                 read_post.content = content
                 read_post.date_modified = datetime.datetime.now()
-                print(f"{local_user.username} edited post #{post_id}")
+                current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} edited post {read_post.post_id}")
                 return redirect(read_post.url)
         else:
 
@@ -292,7 +300,7 @@ def user_edit(username):
             content = request.form.get('content')
 
             local_user.bio = content
-            print(f"{local_user.username} edited their user bio")
+            current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} edited their user bio")
             return redirect(routes["user"].format(local_user.username))
 
 @app.route(routes["signup"], methods=['GET', 'POST'])
@@ -301,8 +309,6 @@ def signup():
     local_user = get_authenticated_user(connection, request.cookies)
 
     if local_user:
-
-        print(f"{local_user.username} is already logged in")
         return redirect(routes["home"])
     else:
         if request.method == 'GET':
@@ -315,28 +321,29 @@ def signup():
 
             user_error = check_username(username)
             if user_error is not None:
-
+                current_app.logger.warning(f"[IP {request.remote_addr}] Failed to create account: {user_error}")
                 return render_template("users/signup.html", routes=routes, user=local_user,
                                        error_message= user_error)
 
             password_error = check_password(password, verify_password)
             if password_error is not None:
-
+                current_app.logger.warning(f"[IP {request.remote_addr}] Failed to create account: {password_error}")
                 return render_template("users/signup.html", routes=routes, user=local_user,
                                        error_message= password_error)
 
             try:
                 test_user = User.read(connection, username)
-
+                user_error = f'Username {test_user.username} already exists'
+                current_app.logger.warning(f"[IP {request.remote_addr}] Failed to create account: {user_error}")
                 return render_template("users/signup.html", routes=routes, user=local_user,
-                                       error_message=f'Username {test_user.username} already exists')
+                                       error_message=user_error)
             except NameError:
                 local_user = User.create(connection, username=username, password=password)
                 token = Token.create(connection, local_user.user_id)
                 resp = make_response(redirect(routes["home"]))
 
                 resp.set_cookie('token', token.token_id)
-                print(f'User {username} created')
+                current_app.logger.info(f"[IP {request.remote_addr}] {username} created new account")
                 return resp
 
 
@@ -349,11 +356,9 @@ def change_password():
 
 
     if not local_user:
-
         return redirect(routes["home"])
     else:
         if request.method == 'GET':
-
             return render_template("settings/password.html", routes=routes, user=local_user, error_message=None)
         else:
             old_password = request.form.get('old_password')
@@ -362,14 +367,18 @@ def change_password():
 
             password_error = check_password(new_password, verify_new_password, old_password)
             if password_error is not None:
+                current_app.logger.warning(f"[IP {request.remote_addr}] {local_user.username} failed to change password: {password_error}")
                 return render_template("settings/password.html", routes=routes, user=local_user,
                                        error_message=password_error)
 
             if old_password == local_user.password_hash:
                 local_user.password_hash = new_password
-                print(f"{local_user.username} changed their password")
+                current_app.logger.info(
+                    f"[IP {request.remote_addr}] {local_user.username} changed their password successfully")
                 return redirect(routes["user"].format(local_user.username))
             else:
+                current_app.logger.warning(
+                    f"[IP {request.remote_addr}] {local_user.username} failed to change password: Incorrect old password")
                 return render_template("settings/password.html", routes=routes, user=local_user,
                                        error_message=f'Incorrect old password')
 
@@ -382,21 +391,15 @@ def about():
 @app.route(routes["logout"])
 def logout():
     connection = get_db_connection()
-    local_user = get_authenticated_user(connection, request.cookies)
+    local_user, token = get_authenticated_user_and_token(connection, request.cookies)
 
     if not local_user:
-
         return redirect(routes["home"])
     else:
-        resp = redirect(routes["home"])
-        token_id = request.cookies['token']
-        cursor = connection.cursor()
-        cursor.execute("DELETE FROM tokens WHERE id = %s", (token_id,))
-        connection.commit()
-        cursor.close()
-        resp.delete_cookie('token')
-
-        return resp
+        token.delete(connection)
+        current_app.logger.info(
+            f"[IP {request.remote_addr}] {local_user.username} logged out")
+        return redirect(routes["home"])
 
 @app.route(API["like_post"].format("<int:post_id>"), methods=['POST'])
 def like_post(post_id):
@@ -413,10 +416,14 @@ def like_post(post_id):
             response = {
             "message": "Success"
             }
+            current_app.logger.info(
+                f"[IP {request.remote_addr}] {local_user.username} liked/unliked post {post_id}")
         except ValueError:
             response = {
                 "message": "Cannot be done"
             }
+            current_app.logger.error(
+                f"[IP {request.remote_addr}] {local_user.username} failed to like/unlike post {post_id}")
         return jsonify(response)
     except NameError as e:
         abort(404, "Post not found")
@@ -437,10 +444,14 @@ def follow_user(username):
             response = {
             "message": "Success"
             }
+            current_app.logger.info(
+                f"[IP {request.remote_addr}] {local_user.username} followed/unfollowed user {username}")
         except ValueError:
             response = {
                 "message": "Cannot be done"
             }
+            current_app.logger.error(
+                f"[IP {request.remote_addr}] {local_user.username} failed to follow/unfollow user {username}")
         return jsonify(response)
     except NameError as e:
         abort(404, "User not found")
@@ -451,10 +462,12 @@ def comment_post(post_id):
     local_user = get_authenticated_user(connection, request.cookies)
     try:
         content = request.form.get("content")
-        Comment.publish(connection, content, local_user.user_id, post_id)
-        print(f'{local_user.username} commented on post {post_id}')
+        comment = Comment.publish(connection, content, local_user.user_id, post_id)
+        current_app.logger.info(
+            f"[IP {request.remote_addr}] {local_user.username} created comment {comment.comment_id} on post {post_id}")
         return redirect(routes["post"].format(post_id))
     except NameError:
+        current_app.logger.warning(f"[IP {request.remote_addr}] {local_user.username} cannot comment,  Post {post_id} not found.")
         abort(404, "Post not found")
 
 @app.route(API["reply_comment"].format("<int:root_comment_id>"), methods=['POST'])
@@ -464,11 +477,15 @@ def reply_comment(root_comment_id):
     try:
         content = request.form.get("content")
         root_comment = Comment.read(connection, root_comment_id)
-        Comment.publish(connection, content, local_user.user_id, root_comment.comment_page, root_comment=root_comment_id)
+        comment = Comment.publish(connection, content, local_user.user_id, root_comment.comment_page, root_comment=root_comment_id)
+        current_app.logger.info(
+            f"[IP {request.remote_addr}] {local_user.username} created comment {comment.comment_id} as a reply to {root_comment_id}")
 
         return redirect(routes["post"].format(root_comment.comment_page))
     except NameError:
-        abort(404, "Post not found")
+        current_app.logger.warning(
+            f"[IP {request.remote_addr}] {local_user.username} cannot reply, Comment {root_comment_id} not found.")
+        abort(404, "Root comment not found")
 
 @app.route("/static/<path:file>")
 def static_file(file):
