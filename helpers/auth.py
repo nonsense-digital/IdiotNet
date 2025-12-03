@@ -44,15 +44,17 @@ def get_authenticated_user_and_token(connection, cookies):
             try:
                 # get the user/token objects and return them
                 user = User.read(connection, token.user_id)
-                return user, token
+                return (user, token)
             except NameError as error:
                 # Mark for deletion if the corresponding user doesn't exist
                 current_app.logger.error(f"Could not fetch auth user: {error}")
                 g.delete_token_cookie = True
+                return (None, None)
         except NameError as error:
             # Mark for deletion if the corresponding token doesn't exist
             current_app.logger.error(f"Could not fetch token: {error}")
             g.delete_token_cookie = True
+            return (None, None)
     else:
         # There is no token, so return null
-        return None
+        return (None, None)

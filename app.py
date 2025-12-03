@@ -87,9 +87,14 @@ def after_request(response):
         response.delete_cookie('token')
     elif 'token' in request.cookies:
         connection = get_db_connection()
-        token = Token.read(connection, request.cookies['token'])
-        token.extend_lifetime(connection)
-        response.set_cookie("token", request.cookies['token'], max_age=datetime.timedelta(days=7))
+        try:
+            # extend lifetime of cookie
+            token = Token.read(connection, request.cookies['token'])
+            token.extend_lifetime(connection)
+            response.set_cookie("token", request.cookies['token'], max_age=datetime.timedelta(days=7))
+        except NameError:
+            # delete cookie if invalid
+            response.delete_cookie('token')
     return response
 
 @app.teardown_appcontext
@@ -410,20 +415,22 @@ def like_post(post_id):
         try:
             if bool(json_data.get("like")):
                 local_user.like(post_id)
+                action = "liked"
             else:
                 local_user.unlike(post_id)
+                action = "unliked"
 
             response = {
             "message": "Success"
             }
             current_app.logger.info(
-                f"[IP {request.remote_addr}] {local_user.username} liked/unliked post {post_id}")
+                f"[IP {request.remote_addr}] {local_user.username} {action} post {post_id}")
         except ValueError:
             response = {
                 "message": "Cannot be done"
             }
             current_app.logger.error(
-                f"[IP {request.remote_addr}] {local_user.username} failed to like/unlike post {post_id}")
+                f"[IP {request.remote_addr}] {local_user.username} failed to {post_id}")
         return jsonify(response)
     except NameError as e:
         abort(404, "Post not found")
@@ -439,13 +446,15 @@ def follow_user(username):
         try:
             if bool(json_data.get("follow")):
                 local_user.follow(followed_user)
+                action = "followed"
             else:
                 local_user.unfollow(followed_user)
+                action = "unfollowed"
             response = {
             "message": "Success"
             }
             current_app.logger.info(
-                f"[IP {request.remote_addr}] {local_user.username} followed/unfollowed user {username}")
+                f"[IP {request.remote_addr}] {local_user.username} {action} user {username}")
         except ValueError:
             response = {
                 "message": "Cannot be done"
