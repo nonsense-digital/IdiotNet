@@ -2,7 +2,7 @@
     <tr><th>Title</th><th>Excerpt</th><th>Author</th><th>Date Posted</th><th>Likes</th><th>Comments</th></tr>
     {% for post in posts %}
         <tr>
-            <th><a href="{{ routes["post"].format(post.post_id) }}">{{ post.title[:12] }}</a></th>
+            <th><a href="{{ routes["post"].format(post.post_id) }}" id="post-{{ post.post_id }}">{{ post.title[:12] }}</a></th>
             <th>{{ post.content[:15] }}</th>
             <th><a href="{{ post.author.url }}">{{ post.author.username }}</a></th>
             <th>{{ post.date_posted.strftime("%Y-%m-%d %H:%M:%S.%f") }}</th>

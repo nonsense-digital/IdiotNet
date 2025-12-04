@@ -101,20 +101,24 @@ def after_request(response):
 def teardown(exception):
     close_db_connection()
 
-def latest_posts(count:int, offset=0, search_user:User=None, sort_by="latest", filter=None) -> tuple:
+def latest_posts(count:int, offset=0, **filters) -> tuple:
     connection = get_db_connection()
-    if not search_user:
+    if not "search_user" in filters:
         posts = Post.latest(connection, count, offset*count, SortMethod.LATEST)
     else:
-        if filter == "liked":
-            posts = search_user.liked_posts[offset*count:offset*count+count]
+        if "search_type" not in filters:
+            filters["search_type"] = "latest"
+        if filters["search_type"] == "liked":
+            posts = filters["search_user"].liked_posts[offset*count:offset*count+count]
+        elif filters["search_type"] == "latest":
+            posts = filters["search_user"].posts[offset*count:offset*count+count]
         else:
-            posts = search_user.posts[offset*count:offset*count+count]
+            raise TypeError("Invalid search type")
 
     return posts
 
-def paged_posts(page:int, search_user:User=None, sort_by="latest", filter=None) -> tuple:
-    posts = latest_posts(20, page - 1, search_user, sort_by, filter)
+def paged_posts(page:int, **filters) -> tuple:
+    posts = latest_posts(20, page - 1, **filters)
     is_last_page = len(posts) < 20
     return posts, is_last_page
 
@@ -143,8 +147,8 @@ def user(username):
         connection = get_db_connection()
         local_user = get_authenticated_user(connection, request.cookies)
         search_user = User.read(connection, username)
-        posts_latest = latest_posts(3, 0, search_user)
-        posts_liked = latest_posts(3, 0, search_user, filter="liked")
+        posts_latest = latest_posts(3, 0, search_user=search_user)
+        posts_liked = latest_posts(3, 0, search_user=search_user, search_type="liked")
         return render_template('users/user.html', routes=routes, posts_latest=posts_latest, posts_liked=posts_liked, user=local_user, search_user=search_user)
     except NameError:
         current_app.logger.warning(f"[IP {request.remote_addr}] User {username} not found.")
@@ -161,7 +165,7 @@ def user_posts(username):
         else:
             page = int(page)
         search_user = User.read(connection, username)
-        posts, is_last_page = paged_posts(page, search_user)
+        posts, is_last_page = paged_posts(page, search_user=search_user)
 
         return render_template('users/posts.html', type="Posts", routes=routes, user=local_user, posts=posts, is_last_page=is_last_page, page=page, search_user=search_user)
     except NameError:
@@ -179,7 +183,7 @@ def user_liked_posts(username):
         else:
             page = int(page)
         search_user = User.read(connection, username)
-        posts, is_last_page = paged_posts(page, search_user, filter="liked")
+        posts, is_last_page = paged_posts(page, search_user=search_user, search_type="liked")
 
         return render_template('users/posts.html', type="Liked Posts", routes=routes, user=local_user, posts=posts, is_last_page=is_last_page, page=page, search_user=search_user)
     except NameError:
