@@ -6,4 +6,4 @@ idiotnet.sqlite
 IdiotNet.iml
 scripts
 keys
-logs/*
+log/*
