@@ -3,7 +3,6 @@ from helpers.auth import *
 from helpers.db import *
 from helpers.listings import paged_posts
 from models.post import Post, check_empty
-from models.user import User
 from routes import routes, API
 
 posts = Blueprint('posts', __name__, template_folder='../templates')
@@ -31,6 +30,8 @@ def latest():
         page = int(page)
     posts, is_last_page = paged_posts(page, sort_by=sort_by)
     return render_template('posts/latest.html', routes=routes, user=local_user, posts=posts, is_last_page=is_last_page, page=page)
+
+
 
 @posts.route(routes["new_post"], methods=['GET', 'POST'])
 def new_post():

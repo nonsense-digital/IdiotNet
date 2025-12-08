@@ -1,18 +1,11 @@
 # a whole ton of imported modules
-import datetime
-from flask import Flask, request, render_template, redirect, make_response, abort, jsonify, current_app
-
+from flask import Flask, request, abort
 from blueprints.posts import posts
 from blueprints.settings import settings
 from blueprints.users import users
 from blueprints.API import api
-from models.comment import Comment
-from models.post import Post, SortMethod, check_empty
-from helpers.listings import *
-from models.user import User, check_username, check_password
 from helpers.db import *
 from helpers.auth import *
-from routes import routes, API
 from models.auth_token import Token
 import os
 from dotenv import load_dotenv
