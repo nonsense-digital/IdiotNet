@@ -22,14 +22,18 @@ def change_password():
             new_password = request.form.get('new_password')
             verify_new_password = request.form.get('verify_new_password')
 
-            password_error = check_password(new_password, verify_new_password, old_password)
+            password_error = check_password(new_password, verify_new_password)
             if password_error is not None:
                 current_app.logger.warning(f"[IP {request.remote_addr}] {local_user.username} failed to change password: {password_error}")
                 return render_template("settings/password.html", routes=routes, user=local_user,
                                        error_message=password_error)
 
-            if old_password == local_user.password_hash:
-                local_user.password_hash = new_password
+            if check_password_hash(local_user.password_hash, new_password):
+                return render_template("settings/password.html", routes=routes, user=local_user,
+                                       error_message="Password is already in use")
+
+            if check_password_hash(local_user.password_hash, old_password):
+                local_user.password_hash = hash_password(new_password)
                 current_app.logger.info(
                     f"[IP {request.remote_addr}] {local_user.username} changed their password successfully")
                 return redirect(routes["user"].format(local_user.username))

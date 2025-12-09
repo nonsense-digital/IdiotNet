@@ -80,8 +80,7 @@ def login():
 
             try:
                 local_user = User.read(connection, username)
-
-                if local_user.password_hash == password:
+                if check_password_hash(local_user.password_hash, password):
                     current_app.logger.info(f"[IP {request.remote_addr}] User {username} logged in successfully.")
                     token = Token.create(connection, local_user.user_id)
                     resp = make_response(redirect(routes["home"]))
@@ -90,7 +89,7 @@ def login():
                     return resp
                 else:
                     current_app.logger.warning(f"[IP {request.remote_addr}] User {username} failed to log in")
-                    return render_template("users/login.html", routes=routes, user=local_user,
+                    return render_template("users/login.html", routes=routes,
                                            error_message=f'Incorrect password')
             except NameError:
                 current_app.logger.warning(f"[IP {request.remote_addr}] User {username} failed to log in")
@@ -153,10 +152,11 @@ def signup():
                 return render_template("users/signup.html", routes=routes, user=local_user,
                                        error_message=user_error)
             except NameError:
-                local_user = User.create(connection, username=username, password=password)
+                password_hash = hash_password(password)
+                local_user = User.create(connection, username=username, password_hash=password_hash)
                 token = Token.create(connection, local_user.user_id)
-                resp = make_response(redirect(routes["home"]))
 
+                resp = make_response(redirect(routes["home"]))
                 resp.set_cookie('token', token.token_id)
                 current_app.logger.info(f"[IP {request.remote_addr}] {username} created new account")
                 return resp

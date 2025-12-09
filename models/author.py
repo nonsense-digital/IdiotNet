@@ -6,6 +6,10 @@ class Author:
         self.user_id = user_id
         cursor = connection.cursor()
         cursor.execute('select username from users where id = %s', (self.user_id,))
-        self.username = cursor.fetchone()[0]
-        self.url = routes['user'].format(self.username)
+        try:
+            self.username = cursor.fetchone()[0]
+            self.url = routes['user'].format(self.username)
+        except TypeError:
+            self.username = None
+            self.url = None
         cursor.close()

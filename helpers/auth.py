@@ -1,5 +1,6 @@
 import datetime
 
+import bcrypt
 from werkzeug.exceptions import BadRequestKeyError
 
 from models.auth_token import Token
@@ -58,3 +59,33 @@ def get_authenticated_user_and_token(connection, cookies):
     else:
         # There is no token, so return null
         return (None, None)
+
+# hash and salt the password for security
+# thanks to https://www.geeksforgeeks.org/python/hashing-passwords-in-python-with-bcrypt/
+def hash_password(password: str|bytes|memoryview) -> bytes:
+    if type(password) == bytes:
+        password_bytes = password
+    elif type(password) == memoryview:
+        password_bytes = bytes(password)
+    elif type(password) == str:
+        password_bytes = password.encode('utf-8')
+    else:
+        raise TypeError('Password must be str, memoryview, or bytes')
+    salt = bcrypt.gensalt()
+    password_hash = bcrypt.hashpw(password_bytes, salt)
+    return password_hash
+
+# hashes and salts the user-specified password to see if it matches the hashed password
+# thanks to https://www.geeksforgeeks.org/python/hashing-passwords-in-python-with-bcrypt/
+def check_password_hash(password_hash:str|bytes|memoryview, user_password: str) -> bool:
+    if type(password_hash) == bytes:
+        hash_bytes = password_hash
+    elif type(password_hash) == memoryview:
+        hash_bytes = bytes(password_hash)
+    elif type(password_hash) == str:
+        hash_bytes = password_hash.encode('utf-8')
+    else:
+        raise TypeError('Password Hash must be str, memoryview, or bytes')
+    user_bytes = user_password.encode('utf-8')
+    result = bcrypt.checkpw(user_bytes, hash_bytes)
+    return result

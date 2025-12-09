@@ -21,7 +21,7 @@ def check_username(username: str):
     return None
 
 
-def check_password(password: str, verify_password: str, previous_password: str = None):
+def check_password(password: str, verify_password: str):
     # Checks a password to make sure it has the correct format, matches the verify password, and is not the same as the previous_password (if specified)
     if password == "":
         return "Password is required"
@@ -29,8 +29,6 @@ def check_password(password: str, verify_password: str, previous_password: str =
         return "Passwords limit is 100 characters"
     elif verify_password != password:
         return "Passwords do not match"
-    elif password == previous_password and previous_password is not None:
-        return "Password is already in use"
     else:
         return None
 
@@ -53,7 +51,7 @@ class User:
     # Creates a new user, adds it to the database, and returns the resulting user object
     # Throws a NameError if the username already exists
     @staticmethod
-    def create(connection, username, password, email=None):
+    def create(connection, username, password_hash, email=None):
         # check if the username already exists
         cursor = connection.cursor()
         cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
@@ -62,7 +60,7 @@ class User:
             # insert user information into the database
             date_created = datetime.datetime.now()
             query = "INSERT INTO users (username, email, date_created, password_hash) VALUES (%s, %s, %s, %s) RETURNING id"
-            data = (username, email, date_created, password)
+            data = (username, email, date_created, password_hash)
             cursor.execute(query, data)
             connection.commit()
 
@@ -71,7 +69,7 @@ class User:
             u.__username__ = username
             u.__email__ = email
             u.__date_created__ = date_created
-            u.__password_hash__ = password
+            u.__password_hash__ = password_hash
             u.connection = connection
             cursor.close()
             return u
@@ -124,6 +122,7 @@ class User:
         if len(result) == 0:
             # modify username
             cursor.execute("UPDATE users set username = %s where id = %s", (username, self.user_id))
+            self.connection.commit()
             self.__username__ = username
             cursor.close()
         else:
@@ -139,6 +138,7 @@ class User:
         # modify email
         cursor = self.connection.cursor()
         cursor.execute("UPDATE users set email = %s where id = %s", (email, self.user_id))
+        self.connection.commit()
         self.__email__ = email
         cursor.close()
 
@@ -150,6 +150,7 @@ class User:
     def date_created(self, date_created: datetime.datetime):
         cursor = self.connection.cursor()
         cursor.execute("UPDATE users set date_created = %s where id = %s", (date_created, self.user_id))
+        self.connection.commit()
         self.__date_created__ = date_created
         cursor.close()
 
@@ -161,6 +162,7 @@ class User:
     def password_hash(self, password_hash: str):
         cursor = self.connection.cursor()
         cursor.execute("UPDATE users set password_hash = %s where id = %s", (password_hash, self.user_id))
+        self.connection.commit()
         self.__password_hash__ = password_hash
         cursor.close()
 
@@ -172,6 +174,7 @@ class User:
     def bio(self, bio: str):
         cursor = self.connection.cursor()
         cursor.execute("UPDATE users set bio = %s where id = %s", (bio, self.user_id))
+        self.connection.commit()
         self.__bio__ = bio
         cursor.close()
 
@@ -251,12 +254,14 @@ class User:
     def update_values(self):
         cursor = self.connection.cursor()
         cursor.execute("SELECT * FROM users WHERE id = %s", (self.user_id,))
-        result = cursor.fetchall()[0]
-        self.__username__ = result[1]
-        self.__email__ = result[2]
-        self.__date_created__ = result[3]
-        self.__password_hash__ = result[4]
-        self.__bio__ = result[5]
+        result = cursor.fetchall()
+        if len(result) > 0:
+            data = result[0]
+            self.__username__ = data[1]
+            self.__email__ = data[2]
+            self.__date_created__ = data[3]
+            self.__password_hash__ = data[4]
+            self.__bio__ = data[5]
 
     # --- USER-SPECIFIC METHODS ---
     # These are various user-specific actions one can perform.
