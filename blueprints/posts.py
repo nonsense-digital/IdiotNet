@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, abort, request, redirect
 from helpers.auth import *
 from helpers.db import *
-from helpers.listings import paged_posts
+from helpers.listings import paged_posts, SearchType
 from models.post import Post, check_empty
 from routes import routes, API
 
@@ -20,7 +20,6 @@ def post(post_id):
 
 @posts.route(routes["latest"])
 def latest():
-    sort_by = request.args.get("sort_by")
     connection = get_db_connection()
     local_user = get_authenticated_user(connection, request.cookies)
     page = request.args.get('page')
@@ -28,7 +27,8 @@ def latest():
         page = 1
     else:
         page = int(page)
-    posts, is_last_page = paged_posts(page, sort_by=sort_by)
+    posts, is_last_page = paged_posts(page, search_type=SearchType.ALL_POSTS)
+    print(is_last_page)
     return render_template('posts/latest.html', routes=routes, user=local_user, posts=posts, is_last_page=is_last_page, page=page)
 
 

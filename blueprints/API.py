@@ -1,9 +1,7 @@
 from flask import Blueprint, render_template, abort, request, redirect, make_response, jsonify
 from helpers.auth import *
 from helpers.db import *
-from helpers.listings import latest_posts, paged_posts
 from models.comment import Comment
-from models.post import Post, check_empty
 from models.user import User, check_username, check_password
 from routes import routes, API
 

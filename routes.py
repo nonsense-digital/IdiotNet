@@ -14,7 +14,8 @@ routes = {
     "user_liked_posts": "/users/{}/liked-posts",
     "user_following": "/users/{}/following",
     "user_followers": "/users/{}/followers",
-    "change_password": "/settings/password"
+    "change_password": "/settings/password",
+    "search": "/search"
 }
 
 API = {

@@ -1,4 +1,5 @@
 import datetime
+
 from routes import routes
 from models.comment import Comment
 from enum import Enum
@@ -8,6 +9,8 @@ class SortMethod(Enum):
     LATEST = 0
     OLDEST = 1
     POPULAR = 2
+    RELEVANT = 3
+    LIKED = 4
 
 # make sure a post title is not empty (excluding spaces)
 def check_empty(text:str):
@@ -88,6 +91,28 @@ class Post:
             p = Post.read(connection, record[0])
             posts.append(p)
         return posts
+
+    @staticmethod
+    def search(connection, term:str, count:int, offset:int=0):
+        print(f"Query: {term}, Count: {count}, Offset: {offset}")
+        # query database for relevant posts
+        cursor = connection.cursor()
+        query = 'SELECT id, title FROM posts WHERE ts_nostop @@ phraseto_tsquery(\'public.english_nostop\', %s) ORDER BY ts_rank(ts_nostop, websearch_to_tsquery(\'public.english_nostop\', %s)) DESC OFFSET %s LIMIT %s;'
+        cursor.execute(query, (term, term, offset, count))
+        results = cursor.fetchall()
+        cursor.close()
+        #print(f"Term: {term} count: {count} offset: {offset} reuslts: {results}")
+        # convert to post objects
+        posts = []
+        for result in results:
+            p = Post.read(connection, result[0])
+            posts.append(p)
+        return posts
+
+
+
+
+
 
     # --- GETTERS AND SETTERS ----
     # When a Post object's atomic properties (title, content, date posted, etc.) are called, a getter function retrieves them from its private field.

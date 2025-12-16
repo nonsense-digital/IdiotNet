@@ -25,8 +25,8 @@ def check_password(password: str, verify_password: str):
     # Checks a password to make sure it has the correct format, matches the verify password, and is not the same as the previous_password (if specified)
     if password == "":
         return "Password is required"
-    elif len(password) > 100:
-        return "Passwords limit is 100 characters"
+    elif len(password) > 50:
+        return "Password limit is 50 characters"
     elif verify_password != password:
         return "Passwords do not match"
     else:

@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, abort, request, redirect, make_response
 from helpers.auth import *
 from helpers.db import *
-from helpers.listings import latest_posts, paged_posts
+from helpers.listings import paged_posts, SearchType, search_posts
 from models.user import User, check_username, check_password
 from routes import routes
 
@@ -14,8 +14,8 @@ def user(username):
         connection = get_db_connection()
         local_user = get_authenticated_user(connection, request.cookies)
         search_user = User.read(connection, username)
-        posts_latest = latest_posts(3, 0, search_user=search_user)
-        posts_liked = latest_posts(3, 0, search_user=search_user, search_type="liked")
+        posts_latest = search_posts(3, 0, search_user=search_user, search_type=SearchType.USER_POSTS)
+        posts_liked = search_posts(3, 0, search_user=search_user, search_type=SearchType.USER_LIKED_POSTS)
         return render_template('users/user.html', routes=routes, posts_latest=posts_latest, posts_liked=posts_liked,
                                user=local_user, search_user=search_user)
     except NameError:
@@ -34,7 +34,7 @@ def user_posts(username):
         else:
             page = int(page)
         search_user = User.read(connection, username)
-        posts, is_last_page = paged_posts(page, search_user=search_user)
+        posts, is_last_page = paged_posts(page, search_user=search_user, search_type=SearchType.USER_POSTS)
 
         return render_template('users/posts.html', type="Posts", routes=routes, user=local_user, posts=posts,
                                is_last_page=is_last_page, page=page, search_user=search_user)
@@ -54,7 +54,7 @@ def user_liked_posts(username):
         else:
             page = int(page)
         search_user = User.read(connection, username)
-        posts, is_last_page = paged_posts(page, search_user=search_user, search_type="liked")
+        posts, is_last_page = paged_posts(page, search_user=search_user, search_type=SearchType.USER_LIKED_POSTS)
 
         return render_template('users/posts.html', type="Liked Posts", routes=routes, user=local_user, posts=posts,
                                is_last_page=is_last_page, page=page, search_user=search_user)
