@@ -33,14 +33,12 @@ def search_posts(count:int, offset:int=0, search_user:User=None, search_type:Sea
         case SearchType.USER_LIKED_POSTS:
             posts = search_user.liked_posts[offset * count:offset * count + count]
         case SearchType.QUERY:
-            print(count, offset)
             posts = Post.search(connection, query, count, offset * count)
         case _:
             raise TypeError("Invalid search type")
     return posts
 
 def paged_posts(page:int, **filters) -> tuple:
-    print(page)
     posts = search_posts(20, page - 1, **filters)
     is_last_page = len(posts) < 20
     return posts, is_last_page

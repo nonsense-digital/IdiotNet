@@ -3,7 +3,7 @@
 {% block title %}IdiotNet | Latest Posts{% endblock %}
 {% block content %}
     <h1>Search Posts</h1>
-    <form method="get">
+    <form method="get" action="{{ routes["search"] }}">
         <label for="query">Search Query:</label> <input type="text" id="query" name="query" value="{{query}}" />
         <input type="submit" value="Search" />
     </form>

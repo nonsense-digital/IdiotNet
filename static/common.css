@@ -10,9 +10,14 @@ p, td, li{
 /* Custom Navbar */
 nav{
     background-color: #C17FF0;
-}
-#main-nav{
     border-bottom: 2px black solid;
+}
+
+nav .searchbox{
+    text-align: right;
+}
+
+#main-nav{
     margin: 0%;
     padding: 0%;
     list-style-type: none;

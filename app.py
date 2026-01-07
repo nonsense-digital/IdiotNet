@@ -101,6 +101,16 @@ def after_request(response):
 def teardown(exception):
     close_db_connection()
 
+# thanks to https://stackoverflow.com/questions/79040845/flask-url-for-with-path-parameter-and-query-parameter#:~:text=1%20Answer,233
+def combine_view_args(*args):
+    dic = {}
+    for arg in args:
+        dic.update(arg)
+    return dic
+@app.context_processor
+def utility_processor():
+    return dict(combine_view_args=combine_view_args)
+
 app.register_blueprint(main)
 app.register_blueprint(users)
 app.register_blueprint(posts)

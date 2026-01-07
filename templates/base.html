@@ -3,15 +3,15 @@
   <head>
     <title>{% block title %}{% endblock %}</title>
     <link rel="stylesheet" href="/static/common.css">
+    <link rel="icon" type="image/png" href="/static/favicon.png">
   </head>
   <body>
     <nav>
         <img src="/static/logo.png" alt="IdiotNet">
         <ul id="main-nav">
         <li><a href="{{ routes['home'] }}">Home</a></li>
-        <li><a href="{{ routes['search'] }}">Search</a></li>
+        <li><a href="{{ routes['latest'] }}">Latest</a></li>
         <li><a href="{{ routes['about'] }}">About</a></li>
-
         {% if user %}
             <li><a href="{{ routes['new_post'] }}">New Post</a></li>
             <li><a href="{{ user.url }}">{{ user.username }}</a></li>
@@ -20,7 +20,12 @@
             <li><a href="{{ routes['login'] }}">Login</a></li>
             <li><a href="{{ routes['signup'] }}">Signup</a></li>
         {% endif %}
+
         </ul>
+        <form method="get" class="searchbox" action="{{ routes["search"] }}">
+            <label for="query">Search:</label> <input type="text" id="query" name="query" value="{{query}}" />
+            <input type="submit" value="Search" />
+        </form>
 
     </nav>
     {% block content %}{% endblock %}

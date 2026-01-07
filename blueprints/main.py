@@ -35,3 +35,4 @@ def search():
         return render_template('search.html', routes=routes, user=local_user, posts=results, page=page, query=query, is_last_page=is_last_page)
     else:
         return render_template("search.html", routes=routes, user=local_user)
+

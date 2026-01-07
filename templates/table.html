@@ -12,10 +12,11 @@
     {% endfor %}
 </table>
 
+
 {% if page > 1 %}
-    <a href="{{  url_for(request.endpoint, **dict(request.args, page= page - 1))|string }}">Previous</a>
+    <a href="{{  url_for(request.endpoint, **combine_view_args(request.args,request.view_args,{'page':page-1}))|string }}">Previous</a>
 {% endif %}
 <span>Page {{ page }}</span>
 {% if not is_last_page %}
-    <a href="{{ url_for(request.endpoint, **dict(request.args, page= page + 1))|string }}">Next</a>
+    <a href="{{ url_for(request.endpoint, **combine_view_args(request.args,request.view_args,{'page':page + 1}))|string}}">Next</a>
 {% endif %}

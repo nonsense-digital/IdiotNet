@@ -94,14 +94,12 @@ class Post:
 
     @staticmethod
     def search(connection, term:str, count:int, offset:int=0):
-        print(f"Query: {term}, Count: {count}, Offset: {offset}")
         # query database for relevant posts
         cursor = connection.cursor()
         query = 'SELECT id, title FROM posts WHERE ts_nostop @@ phraseto_tsquery(\'public.english_nostop\', %s) ORDER BY ts_rank(ts_nostop, websearch_to_tsquery(\'public.english_nostop\', %s)) DESC OFFSET %s LIMIT %s;'
         cursor.execute(query, (term, term, offset, count))
         results = cursor.fetchall()
         cursor.close()
-        #print(f"Term: {term} count: {count} offset: {offset} reuslts: {results}")
         # convert to post objects
         posts = []
         for result in results:
