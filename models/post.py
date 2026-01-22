@@ -3,7 +3,7 @@ import datetime
 from routes import routes
 from models.comment import Comment
 from enum import Enum
-from models.author import Author
+from models.userref import UserRef
 
 class SortMethod(Enum):
     LATEST = 0
@@ -54,7 +54,7 @@ class Post:
         p.connection = connection
         p.__title__ = title
         p.__content__ = content
-        p.__author__ = Author(connection, author)
+        p.__author__ = UserRef(connection, author)
         p.__date_posted__ = date_posted
         cursor.close()
         return p
@@ -147,7 +147,7 @@ class Post:
     def author(self, author):
         cursor = self.connection.cursor()
         cursor.execute("UPDATE posts set author = %s where id = %s", (author, self.post_id))
-        self.__author__ = Author(self.connection, author)
+        self.__author__ = UserRef(self.connection, author)
         cursor.close()
 
     @property
@@ -184,7 +184,7 @@ class Post:
             result = cursor.fetchall()[0]
             self.__title__ = result[1]
             self.__content__ = result[2]
-            self.__author__ = Author(self.connection, result[3])
+            self.__author__ = UserRef(self.connection, result[3])
             self.__date_posted__ = result[4]
             self.__date_modified__ = result[5]
         except IndexError:

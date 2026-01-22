@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}IdiotNet | Admin Dashboard{% endblock %}
+{% block content %}
+    <h1>Admin Dashboard</h1>
+    {% if user.role == "member" %}
+        <p>Haha, nice try</p>
+    {% else %}
+        <h2>Users</h2>
+        <h2>IPs</h2>
+        <h2>Sessions</h2>
+        {% if user.role == "admin" %}
+            <h2>Settings</h2>
+        {% endif %}
+    {% endif %}
+{% endblock %}

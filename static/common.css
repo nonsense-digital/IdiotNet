@@ -80,3 +80,38 @@ nav .searchbox{
     word-wrap: break-word;
     overflow-wrap: break-word
 }
+
+/* admin/moderator views */
+.mod-menu{
+    margin: 0;
+    padding: 8px;
+    color: white;
+    background-color: gray;
+    font-family: monospace;
+    border: 2px black ridge;
+    width: fit-content;
+}
+
+.mod-menu ul{
+    list-style-type: none;
+}
+
+.mod-menu ul li{
+    display: inline;
+    padding: 10px;
+    border: 1px solid black;
+    background-color: lightgray;
+}
+
+.mod-menu ul li:hover{
+    background-color: dimgray;
+}
+
+.mod-menu ul li a{
+    text-decoration: none;
+    color: red;
+}
+
+.property{
+    font-weight: bold;
+}

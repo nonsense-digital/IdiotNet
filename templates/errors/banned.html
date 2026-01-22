@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block title %}IdiotNet | Banned{% endblock %}
+{% block content %}
+    <h1>You have been banned</h1>
+    <p> You have been
+        {% if user.punishment_status.value == "ban" %} temporarily banned
+        {% elif user.punishment_status.value == "permaban" %} permanently banned
+        {% else %} NOT banned (why are you here) {% endif %}
+        due to a violation of idiotnet rules. </p>
+    <span class="property">Reason: </span><span>{{ user.punishment_reason }}</span><br/>
+    {% if user.punishment_status.value == "ban" %}
+    <span class="property">Banned until: </span><span>{{ user.punishment_expiration.strftime("%A, %B %d, %Y %H:%M") }}</span><br/>
+    {% elif user.punishment_status.value == "permaban" %}
+    <p>Your profile is no longer visible on IdiotNet. All content has been deleted.</p>
+    {% else %}
+    <p>Wait... you're not banned... How did you get here?!</p>
+    {% endif %}
+
+{% endblock %}

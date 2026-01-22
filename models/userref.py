@@ -1,7 +1,7 @@
 from routes import routes
 
-# intermediary module for a simple reference to a user without excessive db queries or circular imports
-class Author:
+# simple module for a simple reference to a user without excessive db queries or circular imports
+class UserRef:
     def __init__(self, connection, user_id:int):
         self.user_id = user_id
         cursor = connection.cursor()

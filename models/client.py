@@ -1,40 +1,9 @@
-from __future__ import annotations
-
 import datetime
+from enum import Enum
+
 from models.post import Post
 from routes import routes
-from enum import Enum
-from models.permissions import PunishmentType, Role
-
-# Characters allowed in Usernames
-ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyz1234567890_"
-
-
-
-def check_username(username: str):
-    # Checks a username to make sure it has the correct format
-    global ALLOWED_CHARS
-    if username == "":
-        return "Username is required"
-    elif len(username) > 15:
-        return "Username limit is 15 characters"
-    else:
-        for char in username:
-            if char.lower() not in ALLOWED_CHARS:
-                return 'Only alphanumeric characters and underscores are allowed in usernames'
-    return None
-
-
-def check_password(password: str, verify_password: str):
-    # Checks a password to make sure it has the correct format, matches the verify password, and is not the same as the previous_password (if specified)
-    if password == "":
-        return "Password is required"
-    elif len(password) > 50:
-        return "Password limit is 50 characters"
-    elif verify_password != password:
-        return "Passwords do not match"
-    else:
-        return None
+from models.permissions import Role, PunishmentType
 
 class User:
     # --- CONSTRUCTORS ---
@@ -52,9 +21,6 @@ class User:
         self.__password_hash__ = None
         self.__bio__ = None
         self.__role__ = None
-        self.__punishment_status__ = None
-        self.__punishment_expiration__ = None
-        self.__punishment_reason__ = None
 
     # Creates a new user, adds it to the database, and returns the resulting user object
     # Throws a NameError if the username already exists
@@ -80,8 +46,6 @@ class User:
             u.__password_hash__ = password_hash
             u.__bio__ = ""
             u.__role__ = Role.MEMBER
-            u.__punishment_status__ = PunishmentType.NONE
-            u.__punishment_expiration__ = None
             u.connection = connection
             cursor.close()
             return u
@@ -204,41 +168,6 @@ class User:
     def url(self):
         return routes["user"].format(self.username)
 
-    @property
-    def punishment_status(self):
-        return self.__punishment_status__
-    @punishment_status.setter
-    def punishment_status(self, punishment_status:PunishmentType):
-        cursor = self.connection.cursor()
-        cursor.execute("UPDATE users set punishment_status = %s where id = %s", (punishment_status.value, self.user_id))
-        self.connection.commit()
-        self.__punishment_status__ = punishment_status
-        cursor.close()
-
-    @property
-    def punishment_expiration(self):
-        return self.__punishment_expiration__
-    @punishment_expiration.setter
-    def punishment_expiration(self, punishment_expiration: datetime.datetime):
-        cursor = self.connection.cursor()
-        cursor.execute("UPDATE users set punishment_expiration = %s where id = %s", (punishment_expiration, self.user_id))
-        self.connection.commit()
-        self.__punishment_expiration__ = punishment_expiration
-        cursor.close()
-
-    @property
-    def punishment_reason(self) -> str:
-        return self.__punishment_reason__
-
-    @punishment_reason.setter
-    def punishment_reason(self, punishment_reason: str) -> None:
-        cursor = self.connection.cursor()
-        cursor.execute("UPDATE users set punishment_reason = %s where id = %s",
-                       (punishment_reason, self.user_id))
-        self.connection.commit()
-        self.__punishment_reason__ = punishment_reason
-        cursor.close()
-
     # Gets the user's posts from the database, returning a list of Post objects
     @property
     def posts(self):
@@ -336,7 +265,7 @@ class User:
 
     # Gets the user's followed users, returning a list of User objects
     @property
-    def following(self) -> list[User]:
+    def following(self):
         # query a list of user ids
         cursor = self.connection.cursor()
         cursor.execute("SELECT id FROM follows WHERE follower = %s ORDER BY date_followed DESC", (self.user_id,))
@@ -350,7 +279,7 @@ class User:
 
     # Gets a list of the user's followed user ids (for when the user objects are unnecessary)
     @property
-    def following_ids(self) -> list[int]:
+    def following_ids(self):
         # query a list of user ids
         cursor = self.connection.cursor()
         cursor.execute("SELECT id FROM follows WHERE follower = %s ORDER BY date_followed DESC", (self.user_id,))
@@ -358,7 +287,7 @@ class User:
         return result
 
     # Updates the atomic values stored in the User
-    def update_values(self) -> None:
+    def update_values(self):
         cursor = self.connection.cursor()
         cursor.execute("SELECT * FROM users WHERE id = %s", (self.user_id,))
         result = cursor.fetchall()
@@ -370,29 +299,11 @@ class User:
             self.__password_hash__ = data[4]
             self.__bio__ = data[5]
             self.__role__ = Role(data[6])
-            self.__punishment_status__ = PunishmentType(data[7])
-            self.__punishment_expiration__ = data[8]
-            self.__punishment_reason__ = data[9]
 
     # --- USER-SPECIFIC METHODS ---
     # These are various user-specific actions one can perform.
 
-    # check if the user has an active punishment
-    def check_punishment(self, refresh:bool=False) -> PunishmentType:
-        # refresh values if requested
-        if refresh:
-            self.update_values()
-
-        # check if punishment has expired, if so then reset the punishment
-        if self.__punishment_expiration__ < datetime.datetime.now():
-            self.punishment_status = PunishmentType.NONE
-
-        # return punishment status (if any)
-        return self.__punishment_status__
-
-
-    # check if a post has been liked by the user
-    def is_liked(self, post_id: int) -> bool:
+    def is_liked(self, post_id: int):
         cursor = self.connection.cursor()
         try:
             cursor.execute("SELECT id from likes WHERE liker = %s AND liked = %s", (self.user_id, post_id))
@@ -402,7 +313,7 @@ class User:
         except Exception:
             return False
 
-    def is_followed(self, user_id: int) -> bool:
+    def is_followed(self, user_id: int):
         cursor = self.connection.cursor()
         try:
             cursor.execute("SELECT id from follows WHERE follower = %s AND following = %s", (self.user_id, user_id))
@@ -414,7 +325,7 @@ class User:
 
 
     # Make the user follow another user
-    def follow(self, user_id: int) -> None:
+    def follow(self, user_id: int):
         cursor = self.connection.cursor()
         # check if the user to follow exists
         cursor.execute("SELECT username FROM users WHERE id = %s", (user_id,))
@@ -435,7 +346,7 @@ class User:
             raise NameError("User doesn't exist")
 
     # Make the user unfollow another user
-    def unfollow(self, user_id:int) -> None:
+    def unfollow(self, user_id:int):
         cursor = self.connection.cursor()
         try:
             # attempt to remove the follower relationship
@@ -449,7 +360,7 @@ class User:
 
 
     # Make the user like a post
-    def like(self, post_id:int) -> None:
+    def like(self, post_id:int):
         # check if the post to like exists
         cursor = self.connection.cursor()
         if not self.is_liked(post_id):
@@ -470,7 +381,7 @@ class User:
             raise NameError("User doesn't exist")
 
     # Make the user unlike a post
-    def unlike(self, post_id:int) -> None:
+    def unlike(self, post_id:int):
         cursor = self.connection.cursor()
         try:
             # attempt to remove the follower relationship
@@ -484,7 +395,7 @@ class User:
 
     # helper function to get a user id without pulling all user data
     @staticmethod
-    def get_user_id(connection, username:str) -> int:
+    def get_user_id(connection, username:str):
         cursor = connection.cursor()
         cursor.execute("SELECT id FROM users WHERE username = %s", (username,))
         user_id = cursor.fetchone()[0]

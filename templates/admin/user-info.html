@@ -1,0 +1,9 @@
+<div id="user-info">
+    <h1>{{ search_user.username }}</h1>
+    <h3>User since {{ search_user.date_created.strftime("%Y-%m-%d %H:%M:%S.%f") }}</h3>
+    <h3>Received {{ search_user.follower_ids|length }} Followers</h3>
+    <h3>Followed {{ search_user.following_ids|length }} Users</h3>
+    <h3>Created {{ search_user.post_ids|length }} Posts</h3>
+    <h3>Liked {{ search_user.liked_post_ids|length }} Posts</h3>
+    <h3>Commented {{ search_user.post_ids|length }} Comments</h3>
+</div>

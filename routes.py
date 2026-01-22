@@ -15,7 +15,18 @@ routes = {
     "user_following": "/users/{}/following",
     "user_followers": "/users/{}/followers",
     "change_password": "/settings/password",
-    "search": "/search"
+    "search": "/search",
+    "admin-dashboard": "/admin",
+    "admin-punishments": "/admin/punishments",
+    "admin-user": "/admin/users/{}",
+    "admin-user-sessions": "/admin/users/{}/sessions",
+    "admin-user-ban": "/admin/users/{}/ban",
+    "admin-user-change-role": "/admin/users/{}/role",
+    "admin-user-change-password": "/admin/users/{}/password",
+    "admin-user-permaban": "/admin/users/{}/permaban",
+    "admin-user-mute": "/admin/users/{}/mute",
+    "admin-ip-ban": "/admin/ip/{}/ban",
+    "admin-ip-mute": "/admin/ip/{}/mute"
 }
 
 API = {

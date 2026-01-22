@@ -1,5 +1,6 @@
 import datetime
-from models.author import Author
+from models.userref import UserRef
+from functools import wraps
 
 class Comment:
     # --- CONSTRUCTORS ---
@@ -17,6 +18,15 @@ class Comment:
         self.__comment_type__ = None
         self.__date_posted__ = None
         self.__comment_page__ = None
+        self.__deleted = False
+
+    def not_deleted(func):
+        def decorator(self, *args, **kwargs):
+            if self.__deleted:
+                raise TypeError("Comment deleted")
+            result = func(self, *args, **kwargs)
+            return result
+        return decorator
 
     # creates a new comment object, adds it to the database, and returns the resulting comment object
     @staticmethod
@@ -32,7 +42,7 @@ class Comment:
         # create the new post object
         c = Comment(cursor.fetchone()[0])
         c.__content__ = content
-        c.__author__ = Author(connection, author)
+        c.__author__ = UserRef(connection, author)
         c.__root_comment__ = None
         c.__comment_type__ = None
         c.__date_posted__ = None
@@ -59,6 +69,7 @@ class Comment:
     # There are also getters that query the database for list objects (replies) but no setters, as these are read-only.
 
     @property
+    @not_deleted
     def content(self):
         return self.__content__
     @content.setter
@@ -75,7 +86,7 @@ class Comment:
     def author(self, author:int):
         cursor = self.connection.cursor()
         cursor.execute("UPDATE comments set author = %s where id = %s", (author, self.comment_id))
-        self.__content__ = Author(self.connection, author)
+        self.__content__ = UserRef(self.connection, author)
         cursor.close()
 
     @property
@@ -125,7 +136,7 @@ class Comment:
         try:
             result = cursor.fetchone()
             self.__content__ = result[1]
-            self.__author__ = Author(self.connection, result[2])
+            self.__author__ = UserRef(self.connection, result[2])
             self.__root_comment__ = result[3]
             self.__date_posted__ = result[4]
             self.__comment_type__ = result[5]
@@ -152,6 +163,18 @@ class Comment:
         else:
             raise ValueError("Cannot get replies from non-root comment")
 
+    # --- COMMENT-SPECIFIC METHODS ---
+    # These are various comment-specific actions one can perform.
+
+    def delete(self):
+        # recursively delete all replies to this comment
+        for reply in self.replies:
+            reply.delete()
+
+        # delete this specific comment from the db once we know for sure nothing else refers to it
+        cursor = self.connection.cursor()
+        cursor.execute("DELETE FROM comments WHERE id = %s", (self.comment_id,))
+        cursor.close()
 
 
 

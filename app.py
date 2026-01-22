@@ -1,9 +1,11 @@
 # a whole ton of imported modules
-from flask import Flask, request, abort
+from flask import Flask, request, abort, redirect
 from blueprints.posts import posts
 from blueprints.settings import settings
 from blueprints.users import users
 from blueprints.API import api
+from blueprints.admin import admin
+from blueprints.errors import errors
 from helpers.db import *
 from helpers.auth import *
 from models.auth_token import Token
@@ -11,6 +13,7 @@ import os
 from dotenv import load_dotenv
 from logging.config import dictConfig
 from blueprints.main import main
+from models.permissions import PunishmentType
 
 # Set up Flask app
 app = Flask(__name__)
@@ -58,27 +61,40 @@ requests_log = {}
 temp_banned = []
 @app.before_request
 def limit_requests():
+    # rate limit params
     ip = request.remote_addr
     now = datetime.datetime.now(datetime.UTC)
-    window = 1      # seconds
-    limit = 25       # max requests per window
+    window = 2      # seconds
+    limit = 17       # max requests per window
 
-    if ip in temp_banned:
+    # temporary IP ban message
+    if ip in temp_banned and request.endpoint != 'static':
         current_app.logger.warning(f"[IP {request.remote_addr}] Cannot access the server due to a temporary IP ban.")
-        abort(403, description="You have been temporarily banned.")
+        abort(429, description="You have been temporarily banned.")
 
+    # add ban if not in ban list already
     if ip not in requests_log:
         requests_log[ip] = []
 
     # keep only timestamps within the window
     requests_log[ip] = [t for t in requests_log[ip] if now - t < datetime.timedelta(seconds=window)]
 
-    if len(requests_log[ip]) >= limit:
+    # 429 error for too many requests
+    if len(requests_log[ip]) >= limit and request.endpoint != 'static':
         temp_banned.append(ip)
         current_app.logger.warning(f"[IP {request.remote_addr}] IP has been temporarily banned for spamming.")
         abort(429, description="Too Many Requests")
-
     requests_log[ip].append(now)
+
+    # check if user is banned
+    connection = get_db_connection()
+    local_user = get_authenticated_user(connection, request.cookies)
+    if local_user:
+        if request.endpoint and request.endpoint != 'errors.banned_message' and request.endpoint != 'static' and request.endpoint != 'static' and request.endpoint != 'users.logout':
+            if local_user.check_punishment() == PunishmentType.BAN or local_user.check_punishment() == PunishmentType.PERMABAN:
+                return redirect("/banned")
+
+        
 
 @app.after_request
 def after_request(response):
@@ -116,3 +132,5 @@ app.register_blueprint(users)
 app.register_blueprint(posts)
 app.register_blueprint(api)
 app.register_blueprint(settings)
+app.register_blueprint(admin)
+app.register_blueprint(errors)
