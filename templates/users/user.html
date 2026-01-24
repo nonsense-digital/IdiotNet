@@ -3,66 +3,69 @@
 {% block title %}IdiotNet | {{ search_user.username }}{% endblock %}
 {% block content %}
     <h1>{{ search_user.username }}</h1>
-    {% if search_user.role.value != "member" %}
-        <h2>{{ search_user.role.value }}</h2>
-    {% endif %}
-    <h3><span id="follower-count">{{ search_user.follower_ids|length }}</span> Followers</h3>
-    {% if user %}
-        <button id="follow" data-username="{{ search_user.username }}" data-follow="{{ not user.is_followed(search_user.user_id) }}"></button>
-    {% endif %}
-    <h2>About</h2>
-    <pre id="about">{{ search_user.bio }}</pre>
-    {% if user.username == search_user.username %}
-        <a href="{{ request.url + "\edit" }}">Edit...</a>
-        <a href="{{ routes["change_password"] }}">Change Password...</a>
-    {% endif %}
+    {% if search_user.punishment_status.value != "permaban" %}
+        {% if search_user.role.value != "member" %}
+            <h2>{{ search_user.role.value }}</h2>
+        {% endif %}
+        <h3><span id="follower-count">{{ search_user.follower_ids|length }}</span> Followers</h3>
+        {% if user %}
+            <button id="follow" data-username="{{ search_user.username }}" data-follow="{{ not user.is_followed(search_user.user_id) }}"></button>
+        {% endif %}
+        <h2>About</h2>
+        <pre id="about">{{ search_user.bio }}</pre>
+        {% if user.username == search_user.username %}
+            <a href="{{ request.url + "\edit" }}">Edit...</a>
+            <a href="{{ routes["change_password"] }}">Change Password...</a>
+        {% endif %}
 
-    <h2>Latest Posts</h2>
-    {% if posts_latest != [] %}
-        <ol>
-            {% for post in posts_latest %}
-                <li><a href="{{ post.url }}">{{ post.title }}</a></li>
-            {% endfor %}
-        </ol>
-        <a href="{{ routes['user_posts'].format(search_user.username) }}">See More...</a>
-    {% else %}
-        <p>This loser hasn't posted anything yet!!!</p>
-    {% endif %}
-    <h2>Liked Posts</h2>
-    {% if posts_liked != [] %}
-        <ol>
-            {% for post in posts_liked %}
-                <li><a href="{{ post.url }}">{{ post.title }}</a></li>
-            {% endfor %}
-        </ol>
-        <a href="{{ routes['user_liked_posts'].format(search_user.username) }}">See More...</a>
-    {% else %}
-        <p>Hmmm... this person doesn't like anything......</p>
-    {% endif %}
-    {% if (user) and (user.role.value != "member") %}
-        {% if (user.role.value == "admin") or ((user.role.value == "admin") and (search_user.role.value == "moderator")) %}
-            <div class="mod-menu">
-                <h2>Moderator Options</h2>
-                <ul>
-                    <li><a href="{{ routes["admin-user-ban"].format(search_user.username) }}">Ban</a></li>
-                    <li><a href="{{ routes["admin-user-permaban"].format(search_user.username) }}">Permaban</a></li>
-                    <li><a href="{{ routes["admin-ip-ban"].format(request.remote_addr) }}">IP Ban</a></li>
-                    <li><a href="{{ routes["admin-user-mute"].format(search_user.username) }}">Mute</a></li>
-                    <li><a href="{{ routes["admin-ip-mute"].format(request.remote_addr) }}">IP Mute</a></li>
-                    <li><a href="">Censor Bio</a></li>
-                </ul>
-            </div>
+        <h2>Latest Posts</h2>
+        {% if posts_latest != [] %}
+            <ol>
+                {% for post in posts_latest %}
+                    <li><a href="{{ post.url }}">{{ post.title }}</a></li>
+                {% endfor %}
+            </ol>
+            <a href="{{ routes['user_posts'].format(search_user.username) }}">See More...</a>
+        {% else %}
+            <p>This loser hasn't posted anything yet!!!</p>
         {% endif %}
-        {% if user.role.value == "admin" %}
-            <div class="mod-menu">
-                <h2>Admin Options</h2>
-                <ul>
-                    <li><a href="{{ routes["admin-user-change-password"].format(search_user.username) }}">Change Password</a></li>
-                    <li><a href="{{ routes["admin-user-sessions"].format(search_user.username) }}">View Sessions</a></li>
-                    <li><a href="{{ routes["admin-user-change-role"].format(search_user.username) }}">Change Role</a></li>
-                </ul>
-            </div>
+        <h2>Liked Posts</h2>
+        {% if posts_liked != [] %}
+            <ol>
+                {% for post in posts_liked %}
+                    <li><a href="{{ post.url }}">{{ post.title }}</a></li>
+                {% endfor %}
+            </ol>
+            <a href="{{ routes['user_liked_posts'].format(search_user.username) }}">See More...</a>
+        {% else %}
+            <p>Hmmm... this person doesn't like anything......</p>
         {% endif %}
+        {% if (user) and (user.role.value != "member") and (search_user.user_id != user.user_id) %}
+            {% if (user.role.value == "admin") or ((user.role.value == "admin") and (search_user.role.value == "moderator")) %}
+                <div class="mod-menu">
+                    <h2>Moderator Options</h2>
+                    <ul>
+                        <li><a href="{{ routes["admin-user-ban"].format(search_user.username) }}">Ban</a></li>
+                        <li><a href="{{ routes["admin-user-permaban"].format(search_user.username) }}">Permaban</a></li>
+                        <li><a href="{{ routes["admin-user-mute"].format(search_user.username) }}">Mute</a></li>
+                        <li><a href="{{ routes["admin-user-sessions"].format(search_user.username) }}">View Sessions</a></li>
+                        <li><a href="">Pardon</a></li>
+                        <li><a href="">Censor Bio</a></li>
+                    </ul>
+                </div>
+            {% endif %}
+            {% if user.role.value == "admin" %}
+                <div class="mod-menu">
+                    <h2>Admin Options</h2>
+                    <ul>
+                        <li><a href="{{ routes["admin-user-change-password"].format(search_user.username) }}">Change Password</a></li>
+                        <li><a href="{{ routes["admin-user-change-role"].format(search_user.username) }}">Change Role</a></li>
+                    </ul>
+                </div>
+            {% endif %}
+        {% endif %}
+    {% else %}
+        <p>This user has been removed due to violations of IdiotNet rules.</p>
     {% endif %}
 
 {% endblock %}

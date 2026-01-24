@@ -1,8 +1,17 @@
 import datetime
 from models.userref import UserRef
-from functools import wraps
 
 class Comment:
+    # check at the beginning of most functions to ensure that the user doesn't try to modify or read deleted data
+    def not_deleted(func):
+        def decorator(self, *args, **kwargs):
+            if self.__deleted:
+                raise TypeError("Comment deleted")
+            result = func(self, *args, **kwargs)
+            return result
+
+        return decorator
+
     # --- CONSTRUCTORS ---
     # These are different ways that a Comment object can be created.
 
@@ -19,14 +28,6 @@ class Comment:
         self.__date_posted__ = None
         self.__comment_page__ = None
         self.__deleted = False
-
-    def not_deleted(func):
-        def decorator(self, *args, **kwargs):
-            if self.__deleted:
-                raise TypeError("Comment deleted")
-            result = func(self, *args, **kwargs)
-            return result
-        return decorator
 
     # creates a new comment object, adds it to the database, and returns the resulting comment object
     @staticmethod
@@ -73,6 +74,7 @@ class Comment:
     def content(self):
         return self.__content__
     @content.setter
+    @not_deleted
     def content(self, content:str):
         cursor = self.connection.cursor()
         cursor.execute("UPDATE comments set content = %s where id = %s", (content, self.comment_id))
@@ -80,9 +82,11 @@ class Comment:
         cursor.close()
 
     @property
+    @not_deleted
     def author(self):
         return self.__author__
     @author.setter
+    @not_deleted
     def author(self, author:int):
         cursor = self.connection.cursor()
         cursor.execute("UPDATE comments set author = %s where id = %s", (author, self.comment_id))
@@ -90,9 +94,11 @@ class Comment:
         cursor.close()
 
     @property
+    @not_deleted
     def root_comment(self):
         return self.__root_comment__
     @root_comment.setter
+    @not_deleted
     def root_comment(self, root_comment:int):
         cursor = self.connection.cursor()
         cursor.execute("UPDATE comments set root_comment = %s where id = %s", (root_comment, self.comment_id))
@@ -100,9 +106,11 @@ class Comment:
         cursor.close()
 
     @property
+    @not_deleted
     def date_posted(self):
         return self.__date_posted__
     @date_posted.setter
+    @not_deleted
     def date_posted(self, date_posted:datetime.datetime):
         cursor = self.connection.cursor()
         cursor.execute("UPDATE comments set date_posted = %s where id = %s", (date_posted, self.comment_id))
@@ -110,9 +118,11 @@ class Comment:
         cursor.close()
 
     @property
+    @not_deleted
     def comment_type(self):
         return self.__comment_type__
     @comment_type.setter
+    @not_deleted
     def comment_type(self, comment_type:int):
         cursor = self.connection.cursor()
         cursor.execute("UPDATE comments set comment_type = %s where id = %s", (comment_type, self.comment_id))
@@ -120,9 +130,11 @@ class Comment:
         cursor.close()
 
     @property
+    @not_deleted
     def comment_page(self):
         return self.__comment_page__
     @comment_page.setter
+    @not_deleted
     def comment_page(self, comment_page:int):
         cursor = self.connection.cursor()
         cursor.execute("UPDATE comments set comment_page = %s where id = %s", (comment_page, self.comment_id))
@@ -130,6 +142,7 @@ class Comment:
         cursor.close()
 
     # update all atomic values
+    @not_deleted
     def update_values(self):
         cursor = self.connection.cursor()
         cursor.execute("SELECT * from comments WHERE id = %s", (self.comment_id,))
@@ -146,6 +159,7 @@ class Comment:
 
     # Get all the replies to the comment
     @property
+    @not_deleted
     def replies(self):
         if self.__root_comment__ == -1:
             cursor = self.connection.cursor()
@@ -167,14 +181,18 @@ class Comment:
     # These are various comment-specific actions one can perform.
 
     def delete(self):
-        # recursively delete all replies to this comment
-        for reply in self.replies:
-            reply.delete()
+        # recursively delete all replies to this comment (if root)
+        if self.__root_comment__ == -1:
+            for reply in self.replies:
+                reply.delete()
 
         # delete this specific comment from the db once we know for sure nothing else refers to it
         cursor = self.connection.cursor()
         cursor.execute("DELETE FROM comments WHERE id = %s", (self.comment_id,))
         cursor.close()
+
+        # mark as deleted
+        self.__deleted = True
 
 
 

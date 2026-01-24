@@ -22,6 +22,7 @@ routes = {
     "admin-user-sessions": "/admin/users/{}/sessions",
     "admin-user-ban": "/admin/users/{}/ban",
     "admin-user-change-role": "/admin/users/{}/role",
+    "admin-user-punishment-base": "/admin/users/{}/{}",
     "admin-user-change-password": "/admin/users/{}/password",
     "admin-user-permaban": "/admin/users/{}/permaban",
     "admin-user-mute": "/admin/users/{}/mute",

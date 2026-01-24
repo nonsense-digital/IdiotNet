@@ -22,27 +22,28 @@ def dashboard():
     check_admin(local_user)
     return render_template("admin/index.html", user=local_user, routes=routes)
 
-@admin.route(routes["admin-user-ban"].format("<username>"), methods=['GET', 'POST'])
-def ban_user(username):
+@admin.route(routes["admin-user-punishment-base"].format("<username>", "<punishment>"), methods=['GET', 'POST'])
+def punishment(username, punishment):
     connection = get_db_connection()
     local_user = get_authenticated_user(connection, request.cookies)
     check_admin(local_user)
 
+    punishment = PunishmentType(punishment)
     search_user = User.read(connection, username)
     if request.method == "GET":
-        punishment_name = search_user.punishment_status.value.capitalize()
-        punishment_suffix = "ing" if (search_user.punishment_status == PunishmentType.MUTE) else "nning"
-        punishment_title = f'Confirm {punishment_name}{punishment_suffix} {search_user.username}'
-        return render_template("admin/users/ban.html", user=local_user, routes=routes, search_user=search_user, punishment_name=punishment_name, punishment_title=punishment_title)
+        punishment_name = punishment.title
+        punishment_title = f'Confirm {punishment_name} for {search_user.username}'
+        warning = punishment.warning
+        return render_template("admin/users/punish.html", user=local_user, routes=routes, search_user=search_user,
+                               punishment_name=punishment_name, punishment_title=punishment_title,
+                               warning=warning)
     else:
-        # get punishment parameters
-        valid_until = datetime.datetime.strptime(request.form.get('valid_until'), "%Y-%m-%dT%H:%M")
-        print(valid_until)
-        reason = request.form.get('reason')
-
         # set user punishment
-        search_user.punishment_status = PunishmentType.BAN
-        search_user.punishment_expiration = valid_until
-        search_user.punishment_reason = reason
-        return redirect(routes["admin-dashboard"])
+        search_user.punishment_status = punishment
+        search_user.punishment_reason = request.form.get('reason')
+        if punishment == PunishmentType.PERMABAN:
+            search_user.clear_data()
+        elif 'valid_until' in request.form:
+            search_user.punishment_expiration = datetime.datetime.strptime(request.form.get('valid_until'), "%Y-%m-%dT%H:%M")
 
+        return redirect(routes["admin-dashboard"])

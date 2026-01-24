@@ -5,10 +5,13 @@
     <h1>{{ punishment_title }}</h1>
     {% include 'admin/user-info.html' %}
     <form action="{{ request.url }}" method="post">
+        {% if punishment_name != "Permaban" %}
         <label for="valid_until">{{ punishment_name }} Lasts Until: </label><input id="valid_until" name="valid_until" type="datetime-local">
+        {% endif %}
         <label for="reason">Reason for {{ punishment_name }}: </label><input id="reason" name="reason" type="text" value="You violated IdiotNet rules">
-        <p>By clicking submit, you understand that the user "{{ search_user.username }}" will be unable to use certain IdiotNet features
-        until the ban expires or the ban is revoked. (Keep in mind you can change the expiration date if you want)</p>
+        <p>By clicking submit, you understand that the user "{{ search_user.username }}" will be affected by: <br/>
+        {{ warning }}<br/>
+        {% if punishment_name != "Permaban" %}This will last the ban expires or the ban is revoked or overwritten by another punishment. (Keep in mind you can change the expiration date if you want){% endif %}</p>
         <input id="submit" name="submit" type="submit" value="Submit">
     </form>
 {% endblock %}

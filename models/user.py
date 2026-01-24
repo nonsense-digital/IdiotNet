@@ -5,6 +5,7 @@ from models.post import Post
 from routes import routes
 from enum import Enum
 from models.permissions import PunishmentType, Role
+from models.comment import Comment
 
 # Characters allowed in Usernames
 ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyz1234567890_"
@@ -262,6 +263,29 @@ class User:
         result = [x[0] for x in cursor.fetchall()]
         return result
 
+    # Gets the user's posts from the database, returning a list of Post objects
+    @property
+    def comments(self):
+        # query a list of post ids
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT id FROM comments WHERE author = %s ORDER BY date_posted DESC", (self.user_id,))
+        result = cursor.fetchall()
+
+        # convert to post objects
+        comments = []
+        for post_id in result:
+            comments.append(Comment.read(self.connection, post_id[0]))
+        return comments
+
+    # Gets the user's post ids from the database (for when the post objects are unnecessary)
+    @property
+    def comment_ids(self):
+        # query a list of post ids
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT id FROM comments WHERE author = %s ORDER BY date_posted DESC", (self.user_id,))
+        result = [x[0] for x in cursor.fetchall()]
+        return result
+
     # Gets the user's comments from the database, returning a list of Comment objects
     @property
     def comments(self):
@@ -322,7 +346,7 @@ class User:
         # convert to user objects
         users = []
         for user_id in result:
-            users.append(User.read(self.connection, user_id))
+            users.append(User.read(self.connection, user_id[0]))
         return users
 
     # Gets a list of the user's followers ids (for when the user objects are unnecessary)
@@ -377,6 +401,32 @@ class User:
     # --- USER-SPECIFIC METHODS ---
     # These are various user-specific actions one can perform.
 
+    # delete all user-generated data
+    # used in a permaban
+    def clear_data(self):
+        # delete all posts
+        for post in self.posts:
+            post.delete()
+
+        # clear bio
+        self.bio = ""
+
+        # remove followed
+        for followed in self.following_ids:
+            self.unfollow(followed)
+
+        # remove followers
+        for follower in self.followers:
+            follower.unfollow(self.user_id)
+
+        # remove likes
+        for like in self.liked_post_ids:
+            self.unlike(like)
+
+        # remove all comments
+        for comment in self.comments:
+            comment.delete()
+
     # check if the user has an active punishment
     def check_punishment(self, refresh:bool=False) -> PunishmentType:
         # refresh values if requested
@@ -384,7 +434,8 @@ class User:
             self.update_values()
 
         # check if punishment has expired, if so then reset the punishment
-        if self.__punishment_expiration__ < datetime.datetime.now():
+        # (this doesn't apply to permabans, which are irreversible)
+        if self.__punishment_expiration__ < datetime.datetime.now() and self.__punishment_status__ != PunishmentType.PERMABAN:
             self.punishment_status = PunishmentType.NONE
 
         # return punishment status (if any)

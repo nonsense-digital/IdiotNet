@@ -21,6 +21,16 @@ def check_empty(text:str):
     return withoutSpaces == ""
 
 class Post:
+    # check at the beginning of most functions to ensure that the user doesn't try to modify or read deleted data
+    def not_deleted(func):
+        def decorator(self, *args, **kwargs):
+            if self.__deleted:
+                raise TypeError("Comment deleted")
+            result = func(self, *args, **kwargs)
+            return result
+
+        return decorator
+
     # --- CONSTRUCTORS ---
     # These are different ways that a Post object can be created.
 
@@ -36,6 +46,7 @@ class Post:
         self.__author__ = None
         self.__date_posted__ = None
         self.__date_modified__ = None
+        self.__deleted = False
 
     # Creates a new post, adds it to the database, and returns the resulting post object
     @staticmethod
@@ -118,10 +129,12 @@ class Post:
     # There are also getters that query the database for list objects (comments and attachments) but no setters, as these are read-only.
 
     @property
+    @not_deleted
     def title(self):
         return self.__title__
 
     @title.setter
+    @not_deleted
     def title(self, title):
         cursor = self.connection.cursor()
         cursor.execute("UPDATE posts set title = %s where id = %s", (title, self.post_id))
@@ -129,10 +142,12 @@ class Post:
         cursor.close()
 
     @property
+    @not_deleted
     def content(self):
         return self.__content__
 
     @content.setter
+    @not_deleted
     def content(self, content):
         cursor = self.connection.cursor()
         cursor.execute("UPDATE posts set content = %s where id = %s", (content, self.post_id))
@@ -140,10 +155,12 @@ class Post:
         cursor.close()
 
     @property
+    @not_deleted
     def author(self):
         return self.__author__
 
     @author.setter
+    @not_deleted
     def author(self, author):
         cursor = self.connection.cursor()
         cursor.execute("UPDATE posts set author = %s where id = %s", (author, self.post_id))
@@ -151,10 +168,12 @@ class Post:
         cursor.close()
 
     @property
+    @not_deleted
     def date_posted(self):
         return self.__date_posted__
 
     @date_posted.setter
+    @not_deleted
     def date_posted(self, date_posted):
         cursor = self.connection.cursor()
         cursor.execute("UPDATE posts set date_posted = %s where id = %s", (date_posted, self.post_id))
@@ -162,10 +181,12 @@ class Post:
         cursor.close()
 
     @property
+    @not_deleted
     def date_modified(self):
         return self.__date_modified__
 
     @date_modified.setter
+    @not_deleted
     def date_modified(self, date_modified):
         cursor = self.connection.cursor()
         cursor.execute("UPDATE posts set date_modified = %s where id = %s", (date_modified, self.post_id))
@@ -173,10 +194,12 @@ class Post:
         cursor.close()
 
     @property
+    @not_deleted
     def url(self):
         return routes["post"].format(self.post_id)
 
     # updates all atomic values
+    @not_deleted
     def update_values(self):
         cursor = self.connection.cursor()
         cursor.execute("SELECT * FROM posts WHERE id = %s", (self.post_id,))
@@ -192,6 +215,7 @@ class Post:
 
     # Gets the post's comments from the database
     @property
+    @not_deleted
     def comments(self):
         cursor = self.connection.cursor()
         cursor.execute(
@@ -209,6 +233,7 @@ class Post:
 
     # Gets all post's comments, including replies
     @property
+    @not_deleted
     def all_comments(self):
         cursor = self.connection.cursor()
         cursor.execute(
@@ -224,11 +249,34 @@ class Post:
         cursor.close()
         return comments
 
-    # gets the likes of the post
+    # gets the likes count of the post
     @property
-    def likes(self):
+    @not_deleted
+    def likes_count(self):
         cursor = self.connection.cursor()
         cursor.execute("SELECT id from likes WHERE liked = %s", (self.post_id,))
         results = cursor.fetchall()
         cursor.close()
         return len(results)
+
+    # --- POST-SPECIFIC METHODS ---
+    # These are various post-specific actions one can perform.
+
+    # delete the post and all comments on it
+    @not_deleted
+    def delete(self):
+        # recursively delete all comments and replies on this post
+        for comment in self.comments:
+            comment.delete()
+
+        # delete all likes
+        cursor = self.connection.cursor()
+        cursor.execute("DELETE FROM likes WHERE liked = %s", (self.post_id,))
+
+        # delete this specific post from the db once we know for sure nothing else refers to it
+        cursor = self.connection.cursor()
+        cursor.execute("DELETE FROM posts WHERE id = %s", (self.post_id,))
+        cursor.close()
+
+        # mark as deleted
+        self.__deleted = True

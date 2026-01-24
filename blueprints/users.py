@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, abort, request, redirect, make_res
 from helpers.auth import *
 from helpers.db import *
 from helpers.listings import paged_posts, SearchType, search_posts
+from models.permissions import PunishmentType
 from models.post import Post
 from models.user import User, check_username, check_password
 from routes import routes
@@ -108,14 +109,15 @@ def user_edit(username):
         return redirect(routes["login"])
     else:
         if request.method == 'GET':
-
             return render_template("users/edit.html", routes=routes, user=local_user)
         else:
-            content = request.form.get('content')
-
-            local_user.bio = content
-            current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} edited their user bio")
-            return redirect(routes["user"].format(local_user.username))
+            if local_user.punishment_status != PunishmentType.MUTE:
+                content = request.form.get('content')
+                local_user.bio = content
+                current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} edited their user bio")
+                return redirect(routes["user"].format(local_user.username))
+            else:
+                return render_template("users/edit.html", routes=routes, user=local_user)
 
 
 @users.route(routes["signup"], methods=['GET', 'POST'])
