@@ -28,7 +28,7 @@ def latest():
         page = 1
     else:
         page = int(page)
-    posts, is_last_page = paged_posts(page, search_type=SearchType.ALL_POSTS)
+    posts, is_last_page = paged_posts(page, search_type=SearchType.ALL)
     return render_template('posts/latest.html', routes=routes, user=local_user, posts=posts, is_last_page=is_last_page, page=page)
 
 

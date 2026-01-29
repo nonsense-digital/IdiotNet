@@ -45,11 +45,7 @@
                 <div class="mod-menu">
                     <h2>Moderator Options</h2>
                     <ul>
-                        <li><a href="{{ routes["admin-user-ban"].format(search_user.username) }}">Ban</a></li>
-                        <li><a href="{{ routes["admin-user-permaban"].format(search_user.username) }}">Permaban</a></li>
-                        <li><a href="{{ routes["admin-user-mute"].format(search_user.username) }}">Mute</a></li>
-                        <li><a href="{{ routes["admin-user-sessions"].format(search_user.username) }}">View Sessions</a></li>
-                        <li><a href="">Pardon</a></li>
+                        <li><a href="{{ routes["admin_user_punish"].format(search_user.username) }}">Punish</a></li>
                         <li><a href="">Censor Bio</a></li>
                     </ul>
                 </div>
@@ -58,8 +54,9 @@
                 <div class="mod-menu">
                     <h2>Admin Options</h2>
                     <ul>
-                        <li><a href="{{ routes["admin-user-change-password"].format(search_user.username) }}">Change Password</a></li>
-                        <li><a href="{{ routes["admin-user-change-role"].format(search_user.username) }}">Change Role</a></li>
+                        <li><a href="{{ routes["admin_user_change_email"].format(search_user.username) }}">Change Email</a></li>
+                        <li><a href="{{ routes["admin_user_change_password"].format(search_user.username) }}">Change Password</a></li>
+                        <li><a href="{{ routes["admin_user_change_role"].format(search_user.username) }}">Change Role</a></li>
                     </ul>
                 </div>
             {% endif %}

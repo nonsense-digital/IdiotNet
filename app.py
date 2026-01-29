@@ -13,10 +13,14 @@ import os
 from dotenv import load_dotenv
 from logging.config import dictConfig
 from blueprints.main import main
+from models.client import Client
 from models.permissions import PunishmentType
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Set up Flask app
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1) # thanks to https://sentry.io/answers/get-the-ip-address-of-a-visitor-in-flask/
+
 load_dotenv()
 
 # Configures logging for the Flask server
@@ -61,11 +65,18 @@ requests_log = {}
 temp_banned = []
 @app.before_request
 def limit_requests():
+    # get login/db
+    connection = get_db_connection()
+    local_user = get_authenticated_user(connection, request.cookies)
+    client = Client(connection, request.remote_addr)
+
     # rate limit params
     ip = request.remote_addr
     now = datetime.datetime.now(datetime.UTC)
     window = 2      # seconds
     limit = 17       # max requests per window
+
+    client.last_accessed = now
 
     # temporary IP ban message
     if ip in temp_banned and request.endpoint != 'static':
@@ -83,14 +94,16 @@ def limit_requests():
     if len(requests_log[ip]) >= limit and request.endpoint != 'static':
         temp_banned.append(ip)
         current_app.logger.warning(f"[IP {request.remote_addr}] IP has been temporarily banned for spamming.")
+        client.rate_limits += 1
         abort(429, description="Too Many Requests")
     requests_log[ip].append(now)
 
     # check if user is banned
-    connection = get_db_connection()
-    local_user = get_authenticated_user(connection, request.cookies)
-    if local_user:
-        if request.endpoint and request.endpoint != 'errors.banned_message' and request.endpoint != 'static' and request.endpoint != 'static' and request.endpoint != 'users.logout':
+    if request.endpoint and request.endpoint != 'errors.banned_message' and request.endpoint != 'static' and request.endpoint != 'static' and request.endpoint != 'users.logout':
+        if client.check_punishment() == PunishmentType.BAN:
+            print("Whar??")
+            return redirect("/banned")
+        if local_user:
             if local_user.check_punishment() == PunishmentType.BAN or local_user.check_punishment() == PunishmentType.PERMABAN:
                 return redirect("/banned")
 

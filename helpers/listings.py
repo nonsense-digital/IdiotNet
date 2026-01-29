@@ -1,4 +1,5 @@
 from helpers.db import *
+from models.client import Client
 from models.post import Post, SortMethod
 from enum import Enum
 
@@ -6,7 +7,7 @@ from models.user import User
 
 
 class SearchType(Enum):
-    ALL_POSTS = 0
+    ALL = 0
     USER_POSTS = 1
     USER_LIKED_POSTS = 2
     QUERY = 3
@@ -22,11 +23,11 @@ class SearchType(Enum):
             raise TypeError("Invalid search type")'''
 
 
-def search_posts(count:int, offset:int=0, search_user:User=None, search_type:SearchType="latest", query:str="") -> tuple:
+def search_posts(count:int, offset:int=0, search_user:User=None, search_type:SearchType= "latest", query:str= "") -> tuple:
     connection = get_db_connection()
     posts = ()
     match search_type:
-        case SearchType.ALL_POSTS:
+        case SearchType.ALL:
             posts = Post.latest(connection, count, offset * count, SortMethod.LATEST)
         case SearchType.USER_POSTS:
             posts = search_user.posts[offset * count:offset * count + count]
@@ -40,5 +41,22 @@ def search_posts(count:int, offset:int=0, search_user:User=None, search_type:Sea
 
 def paged_posts(page:int, **filters) -> tuple:
     posts = search_posts(20, page - 1, **filters)
+    is_last_page = len(posts) < 20
+    return posts, is_last_page
+
+def search_clients(count:int, offset:int=0, search_user:User=None, search_type:SearchType= "latest", query:str= "") -> tuple:
+    connection = get_db_connection()
+    clients = ()
+    match search_type:
+        case SearchType.ALL:
+            clients = Client.latest(connection, count, offset * count)
+        case SearchType.QUERY:
+            raise NotImplementedError("Search type not implemented yet.")
+        case _:
+            raise TypeError("Invalid search type")
+    return clients
+
+def paged_clients(page:int, **filters) -> tuple:
+    posts = search_clients(20, page - 1, **filters)
     is_last_page = len(posts) < 20
     return posts, is_last_page

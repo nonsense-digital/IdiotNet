@@ -11,7 +11,7 @@ main = Blueprint('index', __name__, template_folder='../templates')
 def index():
     connection = get_db_connection()
     local_user = get_authenticated_user(connection, request.cookies)
-    latest_posts = search_posts(10, search_type=SearchType.ALL_POSTS)
+    latest_posts = search_posts(10, search_type=SearchType.ALL)
     return render_template('index.html', routes=routes, user=local_user, latest_posts=latest_posts)
 
 # Simple description of the site and who made it

@@ -60,7 +60,8 @@ create table tokens
 (
     id          uuid      not null,
     user_id     integer   not null,
-    valid_until timestamp not null
+    valid_until timestamp not null,
+    client      inet      not null
 );
 
 create table users
@@ -100,16 +101,16 @@ INSERT INTO config VALUES ('version', '1.0');
 INSERT INTO config VALUES ('join-code', null);
 INSERT INTO config VALUES ('allow-signup', true);
 
-create table clients
+create table public.clients
 (
     ip_address            inet not null
         constraint clients_pk
             primary key,
     last_accessed         timestamp,
     punishment_status     punishmenttype default 'none'::punishmenttype,
-    punishment_expiration timestamp,
+    punishment_expiration timestamp      default now(),
     punishment_reason     varchar(50)    default ''::character varying,
-    rate_limits           integer
+    rate_limits           integer        default 0
 );
 
 create table follows

@@ -16,9 +16,9 @@
             <li><a href="{{ routes['new_post'] }}">New Post</a></li>
             <li><a href="{{ user.url }}">Profile</a></li>
             {% if user.role.value == "moderator" %}
-                <li><a href="{{ routes['admin-dashboard'] }}">Moderator</a></li>
+                <li><a href="{{ routes['admin_dashboard'] }}">Moderator</a></li>
             {% elif user.role.value == "admin" %}
-                <li><a href="{{ routes['admin-dashboard'] }}">Control Panel</a></li>
+                <li><a href="{{ routes['admin_dashboard'] }}">Control Panel</a></li>
             {% endif %}
             <li><a href="{{ routes['logout'] }}">Logout</a></li>
         {% else %}
@@ -41,5 +41,6 @@
             <script src="/static/hacker.js"></script>
         {% endif %}
     {% endif %}
+    {% block extra_js %}{% endblock %}
   </body>
 </html>

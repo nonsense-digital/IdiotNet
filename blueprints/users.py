@@ -84,7 +84,7 @@ def login():
                 local_user = User.read(connection, username)
                 if check_password_hash(local_user.password_hash, password):
                     current_app.logger.info(f"[IP {request.remote_addr}] User {username} logged in successfully.")
-                    token = Token.create(connection, local_user.user_id)
+                    token = Token.create(connection, local_user.user_id, request.remote_addr)
                     resp = make_response(redirect(routes["home"]))
 
                     resp.set_cookie('token', token.token_id)
@@ -157,7 +157,7 @@ def signup():
             except NameError:
                 password_hash = hash_password(password)
                 local_user = User.create(connection, username=username, password_hash=password_hash)
-                token = Token.create(connection, local_user.user_id)
+                token = Token.create(connection, local_user.user_id, request.remote_addr)
 
                 resp = make_response(redirect(routes["home"]))
                 resp.set_cookie('token', token.token_id)
