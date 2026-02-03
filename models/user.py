@@ -113,6 +113,34 @@ class User:
         except TypeError:
             raise NameError("User not found")
 
+    # finds a list of all users, sorted by date created
+    @staticmethod
+    def latest(connection, count: int, offset: int = 0):
+        cursor = connection.cursor()
+        query = "SELECT id FROM users ORDER BY date_created DESC OFFSET %s LIMIT %s"
+        cursor.execute(query, (offset, count))
+        data = cursor.fetchall()
+        clients = []
+        for record in data:
+            p = User.read(connection, record[0])
+            clients.append(p)
+        return clients
+
+    # finds a list of all punished users, sorted by punishment expiration
+    @staticmethod
+    def punished(connection, count: int, offset: int = 0):
+        cursor = connection.cursor()
+        query = "SELECT id FROM users WHERE punishment_status != 'none' ORDER BY punishment_expiration DESC OFFSET %s LIMIT %s"
+        cursor.execute(query, (offset, count))
+        data = cursor.fetchall()
+        users = []
+        for record in data:
+            p = User.read(connection, record[0])
+            users.append(p)
+        return users
+
+
+
     # --- GETTERS AND SETTERS ----
     # When a User object's atomic properties (username, email, date created, etc.) are called, a getter function retrieves them from its private field.
     # When an atomic value is modified, the change is sent to the database with a setter function.
@@ -286,29 +314,6 @@ class User:
         result = [x[0] for x in cursor.fetchall()]
         return result
 
-    # Gets the user's comments from the database, returning a list of Comment objects
-    @property
-    def comments(self):
-        # query a list of comment ids
-        cursor = self.connection.cursor()
-        cursor.execute("SELECT id FROM comments WHERE author = %s ORDER BY date_posted DESC", (self.user_id,))
-        result = cursor.fetchall()
-
-        # convert to comment objects
-        comments = []
-        for comments_id in result:
-            comments.append(Post.read(self.connection, comments_id[0]))
-        return comments
-
-    # Gets the user's comment ids from the database (for when the comment objects are unnecessary)
-    @property
-    def comment_ids(self):
-        # query a list of post ids
-        cursor = self.connection.cursor()
-        cursor.execute("SELECT id FROM comments WHERE author = %s ORDER BY date_posted DESC", (self.user_id,))
-        result = [x[0] for x in cursor.fetchall()]
-        return result
-
     # Gets the user's liked posts from the database, returning a list of Post objects
     @property
     def liked_posts(self):
@@ -380,6 +385,25 @@ class User:
         cursor.execute("SELECT id FROM follows WHERE follower = %s ORDER BY date_followed DESC", (self.user_id,))
         result = cursor.fetchall()
         return result
+
+    # method that gets all active auth tokens (sessions) on the user
+    @property
+    def tokens(self):
+        from models.auth_token import Token
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT id FROM tokens WHERE user_id = %s", (self.user_id,))
+        result = cursor.fetchall()
+        tokens = []
+        for token in result:
+            tokens.append(Token.read(self.connection, token[0]))
+        return tokens
+
+    # method that gets the ids of all active auth tokens (sessions) on the client
+    @property
+    def token_ids(self):
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT id FROM tokens WHERE user_id = %s", (self.user_id,))
+        return [x[0] for x in cursor.fetchall()]
 
     # Updates the atomic values stored in the User
     def update_values(self) -> None:

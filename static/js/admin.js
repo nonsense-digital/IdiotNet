@@ -25,4 +25,17 @@ $(document).ready(function() {
         punishment_input.trigger("change");
 
     }
+
+    if($("#config_form")){
+        let require_join_code_input = $("#require_join_code");
+        let join_code_input = $("#join_code");
+        require_join_code_input.on( "change", function() {
+            if(require_join_code_input.is(':checked')){
+                join_code_input.prop("disabled", "");
+            }else{
+                join_code_input.prop("disabled", "disabled");
+            }
+        });
+        require_join_code_input.trigger("change");
+    }
 });

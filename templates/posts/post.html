@@ -18,12 +18,11 @@
     <div id="post-content">{{ post.content }}</div>
     {% include 'comments.html' %}
     {% if (user) and (user.role.value != "member") %}
-            <div class="mod-menu">
-                <h2>Moderator Options</h2>
-                <ul>
-                    <li><a href="">Delete</a></li>
-                    <li><a href="">Disable Comments</a></li>
-                </ul>
-            </div>
-        {% endif %}
+        <div class="mod-menu">
+            <h2>{{ user.role.value.capitalize() }} Options</h2>
+            <ul>
+                <li><a href="{{ routes["admin_post_delete"].format(post.post_id) }}">Delete</a></li>
+            </ul>
+        </div>
+    {% endif %}
 {% endblock %}

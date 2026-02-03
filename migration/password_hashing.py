@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 
 # RUN THIS FILE IF YOUR PASSWORDS ARE STILL IN PLAINTEXT!
 # If your passwords are already hashed, then this will break all the accounts
+# (it's also a good idea to do a backup before you run this script)
 
 # also run this: alter table users alter column password_hash type bytea using password_hash::bytea;
 

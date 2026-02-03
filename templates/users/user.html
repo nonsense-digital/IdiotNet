@@ -43,20 +43,14 @@
         {% if (user) and (user.role.value != "member") and (search_user.user_id != user.user_id) %}
             {% if (user.role.value == "admin") or ((user.role.value == "admin") and (search_user.role.value == "moderator")) %}
                 <div class="mod-menu">
-                    <h2>Moderator Options</h2>
+                    <h2>{{ user.role.value.capitalize() }} Options</h2>
                     <ul>
                         <li><a href="{{ routes["admin_user_punish"].format(search_user.username) }}">Punish</a></li>
-                        <li><a href="">Censor Bio</a></li>
-                    </ul>
-                </div>
-            {% endif %}
-            {% if user.role.value == "admin" %}
-                <div class="mod-menu">
-                    <h2>Admin Options</h2>
-                    <ul>
-                        <li><a href="{{ routes["admin_user_change_email"].format(search_user.username) }}">Change Email</a></li>
-                        <li><a href="{{ routes["admin_user_change_password"].format(search_user.username) }}">Change Password</a></li>
-                        <li><a href="{{ routes["admin_user_change_role"].format(search_user.username) }}">Change Role</a></li>
+                        <li><a href="{{ routes["admin_user_censor_bio"].format(search_user.username) }}">Censor Bio</a></li>
+                        {% if user.role.value == "admin" %}
+                            <li><a href="{{ routes["admin_user_change_role"].format(search_user.username) }}">Change Role</a></li>
+                            <li><a href="{{ routes["admin_user_sessions"].format(search_user.username) }}">View Sessions</a></li>
+                        {% endif %}
                     </ul>
                 </div>
             {% endif %}

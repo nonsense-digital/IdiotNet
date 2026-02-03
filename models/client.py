@@ -43,6 +43,19 @@ class Client:
             clients.append(p)
         return clients
 
+    # finds a list of all punished clients, sorted by punishment expiration
+    @staticmethod
+    def punished(connection, count: int, offset: int = 0):
+        cursor = connection.cursor()
+        query = "SELECT ip_address FROM clients WHERE punishment_status != 'none' ORDER BY punishment_expiration DESC OFFSET %s LIMIT %s"
+        cursor.execute(query, (offset, count))
+        data = cursor.fetchall()
+        clients = []
+        for record in data:
+            p = Client(connection, record[0])
+            clients.append(p)
+        return clients
+
     # --- GETTERS AND SETTERS ----
     # When a Client object's atomic properties (punishment reason, rate limits, etc) are called,
     # a getter function retrieves them from its private field.

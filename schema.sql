@@ -99,7 +99,8 @@ create table config
 -- This is done to prevent version mismatch between the IdiotNet backend and the database schema
 INSERT INTO config VALUES ('version', '1.0');
 INSERT INTO config VALUES ('join-code', null);
-INSERT INTO config VALUES ('allow-signup', true);
+INSERT INTO config VALUES ('allow_signup', true);
+INSERT INTO config VALUES ('approve_posts', false);
 
 create table public.clients
 (

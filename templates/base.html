@@ -2,15 +2,16 @@
 <html lang="en">
   <head>
     <title>{% block title %}{% endblock %}</title>
-    <link rel="stylesheet" href="/static/common.css">
+    <link rel="stylesheet" href="/static/css/common.css">
     <link rel="icon" type="image/png" href="/static/favicon.png">
   </head>
   <body>
     <nav>
-        <img src="/static/logo.png" alt="IdiotNet">
+        <img src="/static/images/logo.png" alt="IdiotNet">
         <ul id="main-nav">
         <li><a href="{{ routes['home'] }}">Home</a></li>
         <li><a href="{{ routes['latest'] }}">Latest</a></li>
+        <li><a href="{{ routes['users'] }}">Users</a></li>
         <li><a href="{{ routes['about'] }}">About</a></li>
         {% if user %}
             <li><a href="{{ routes['new_post'] }}">New Post</a></li>
@@ -35,10 +36,10 @@
     </nav>
     {% block content %}{% endblock %}
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-    <script src="/static/common.js"></script>
+    <script src="/static/js/common.js"></script>
     {% if post %}
         {% if post.title == "evil277&" %}
-            <script src="/static/hacker.js"></script>
+            <script src="/static/js/hacker.js"></script>
         {% endif %}
     {% endif %}
     {% block extra_js %}{% endblock %}

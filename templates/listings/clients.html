@@ -2,24 +2,24 @@
     <tr><th>IP</th><th>Last Accessed</th><th>Sessions</th><th>Punishment</th><th>Punishment Expiration</th><th>Punishment Reason</th></tr>
     {% for client in clients %}
         <tr>
-            <th><a href="{{ routes["admin_client"].format(client.ip) }}" >{{ client.ip }}</a></th>
-            <th>{{ client.last_accessed.strftime("%Y-%m-%d %H:%M:%S.%f") }}</th>
-            <th><a href="{{ routes["admin_client_sessions"].format(client.ip) }}">{{ client.token_ids|length }} Sessions</a></th>
-            <th> {{ client.punishment_status }} </th>
-            <th>
+            <td><a href="{{ routes["admin_client_punish"].format(client.ip) }}" >{{ client.ip }}</a></td>
+            <td>{{ client.last_accessed.strftime("%Y-%m-%d %H:%M:%S.%f") }}</td>
+            <td><a href="{{ routes["admin_client_sessions"].format(client.ip) }}">{{ client.token_ids|length }} Sessions</a></td>
+            <td> {{ client.punishment_status.value.capitalize() }} </td>
+            <td>
                 {% if client.punishment_status != 'none' and client.punishment_status != 'permaban' %}
                     {{ client.punishment_expiration.strftime("%Y-%m-%d %H:%M") }}
                 {% else %}
                     N/A
                 {% endif %}
-            </th>
-            <th>
+            </td>
+            <td>
                 {% if client.punishment_status != 'none'%}
                     {{ client.punishment_reason }}
                 {% else %}
                     N/A
                 {% endif %}
-            </th>
+            </td>
         </tr>
     {% endfor %}
 </table>

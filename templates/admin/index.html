@@ -7,10 +7,26 @@
         <p>Haha, nice try</p>
     {% else %}
         <h2>Users</h2>
-        <h2>IPs</h2>
-        <h2>Sessions</h2>
-        {% if user.role == "admin" %}
-            <h2>Settings</h2>
+             <ol id="latest">
+                {% for user in users %}
+                    <li><a href="{{ user.url }}" >{{ user.username }}</a></li>
+                {% endfor %}
+             </ol>
+             <a href="{{ routes['admin_users'] }}">See More...</a>
+        <h2>Clients</h2>
+            <ol id="latest">
+                {% for client in clients %}
+                    <li><a href="{{ routes["admin_client_punish"].format(client.ip) }}" >{{ client.ip }}</a></li>
+                {% endfor %}
+            </ol>
+            <a href="{{ routes['admin_client_list'] }}">See More...</a>
+        <h2>Advanced</h2>
+        <span id="property">IdiotNet Version: </span> <span>{{ config.version }}</span><br/>
+        <span id="property">Join Code: </span> <span>{{ config.join_code if config.join_code_required else '[NOT ENABLED]' }}</span><br/>
+        <span id="property">Signup Allowed: </span> <span>{{ config.allow_signup }}</span><br/>
+        <span id="property">Require Post Approval: </span> <span>{{ config.approve_posts }}</span><br/>
+        {% if user.role.value == 'admin' %}
+            <a href="{{ routes["admin_config"] }}">Change Configuration...</a>
         {% endif %}
     {% endif %}
 {% endblock %}
