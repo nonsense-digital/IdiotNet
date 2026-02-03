@@ -13,14 +13,18 @@
     {% for comment in post.comments|reverse %}
         <li><a href="{{ routes["user"].format(comment.author.username) }}">{{ comment.author.username }}</a>: {{ comment.content }}
             {% if (user) and (user.role.value != "member") %}
-                            <a href=""><img src="/static/images/x-solid-full.svg" width="10" height="10" alt="delete comment"></a>
+                            <a href="{{ routes["admin_comment_delete"].format(comment.comment_id) }}">
+                                <img src="/static/images/x-solid-full.svg" width="10" height="10" alt="delete comment">
+                            </a>
             {% endif %}
             <ul class="replies">
                 {% for reply in comment.replies %}
                     <li>
                         <a href="{{ routes["user"].format(reply.author.username) }}">{{ reply.author.username }}</a>: {{ reply.content }}
                         {% if (user) and (user.role.value != "member") %}
-                            <a href=""><img src="/static/images/x-solid-full.svg" width="20" height="20" alt="delete comment"></a>
+                            <a href="{{ routes["admin_comment_delete"].format(reply.comment_id) }}">
+                                <img src="/static/images/x-solid-full.svg" width="10" height="10" alt="delete comment">
+                            </a>
                         {% endif %}
                     </li>
                 {% endfor %}

@@ -4,6 +4,7 @@ from helpers.db import *
 from helpers.listings import paged_posts, SearchType, search_posts, paged_clients, search_users, search_clients, \
     paged_users
 from models.client import Client
+from models.comment import Comment
 from models.config import Config
 from models.post import Post
 from models.user import User, check_username, check_password
@@ -134,6 +135,20 @@ def post_delete(post_id):
     else:
         post.delete()
         return redirect(routes["admin_dashboard"])
+
+@admin.route(routes["admin_comment_delete"].format("<int:comment_id>"), methods=['GET', 'POST'])
+def comment_delete(comment_id):
+    connection = get_db_connection()
+    local_user = get_authenticated_user(connection, request.cookies)
+    check_admin(local_user)
+
+    comment = Comment.read(connection, comment_id)
+    if request.method == "GET":
+        return render_template("admin/comments/delete.html", user=local_user, routes=routes, comment=comment)
+    else:
+        post = Post.read(connection, comment.comment_page)
+        comment.delete()
+        return redirect(post.url)
 
 @admin.route(routes["admin_client_list"])
 def client_list():

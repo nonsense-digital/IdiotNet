@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}IdiotNet | Delete Comment{% endblock %}
+{% block content %}
+    <h1>Delete Comment #{{ comment.comment_id }}</h1>
+    <h2><a href="{{ comment.author.url }}"> {{ comment.author.username }}</a></h2>
+    <p class="small_info">Posted at {{ comment.date_posted.strftime("%Y-%m-%d %H:%M") }}</p>
+    <div id="post-content">{{ comment.content }}</div>
+    {% if comment.root_comment == -1 %}
+        <h3><span id="like-count">{{ comment.replies|length }}</span> Replies</h3>
+        <p>Note: Because this is a root comment, all replies to this will be deleted.</p>
+    {% endif %}
+    <form action="{{ request.url }}" id="punishment_form" method="post">
+        <input id="submit" name="submit" type="submit" value="Delete">
+    </form>
+{% endblock %}
