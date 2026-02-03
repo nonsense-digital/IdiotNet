@@ -49,7 +49,7 @@ def banned_message():
     if local_user:
         if local_user.punishment_status == PunishmentType.BAN or local_user.punishment_status == PunishmentType.PERMABAN:
             return render_template('errors/user-banned.html', user=local_user, routes=routes)
-    elif client.punishment_status == PunishmentType.BAN:
+    if client.punishment_status == PunishmentType.BAN:
         return render_template('errors/client-banned.html', user=local_user, client=client, routes=routes)
     return redirect("/")
 

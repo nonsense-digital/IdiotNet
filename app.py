@@ -99,9 +99,8 @@ def limit_requests():
     requests_log[ip].append(now)
 
     # check if user is banned
-    if request.endpoint and request.endpoint != 'errors.banned_message' and request.endpoint != 'static' and request.endpoint != 'static' and request.endpoint != 'users.logout':
+    if request.endpoint and request.endpoint != 'errors.banned_message' and request.endpoint != 'static' and request.endpoint != 'users.logout':
         if client.check_punishment() == PunishmentType.BAN:
-            print("Whar??")
             return redirect("/banned")
         if local_user:
             if local_user.check_punishment() == PunishmentType.BAN or local_user.check_punishment() == PunishmentType.PERMABAN:
