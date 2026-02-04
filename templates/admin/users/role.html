@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}IdiotNet | Punish User{% endblock %}
+{% block content %}
+    <h1>Change Role for User "{{ search_user.username }}"</h1>
+    {% if user.role.value == 'admin' %}
+    <form action="{{ request.url }}" id="punishment_form" method="post">
+            <label for="role" id="role_label">Role: </label>
+                <select id="role" name="role">
+                    {% for role in Role.__members__.values() %}
+                        <option value="{{ role.value }}" {% if role.value == search_user.role.value %}selected{% endif %}>
+                            {{ role.value.capitalize() }}
+                        </option>
+                    {% endfor %}
+                </select>
+            <input id="submit" name="submit" type="submit" value="Change Role">
+    </form>
+    {% else %}
+        <p>You do not have permission to perform this action.</p>
+    {% endif %}
+{% endblock %}
+{% block extra_js %}
+    <script src="/static/js/admin.js"></script>
+{% endblock %}

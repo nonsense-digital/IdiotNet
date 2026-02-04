@@ -3,7 +3,7 @@
 {% block title %}IdiotNet | New Post{% endblock %}
 {% block content %}
     <h1>New Post</h1>
-    {% if user.punishment_status.value != "mute" %}
+    {% if user.punishment_status.value != "mute" and client.punishment_status.value != "mute" %}
         {% if error_message %}
             <div id="error">
                 <h3>Error</h3>

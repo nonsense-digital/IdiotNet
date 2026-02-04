@@ -110,6 +110,26 @@ def user_punishment(username):
 
         return redirect(search_user.url)
 
+@admin.route(routes["admin_user_change_role"].format("<username>"), methods=['GET', 'POST'])
+def user_change_role(username):
+    connection = get_db_connection()
+    local_user = get_authenticated_user(connection, request.cookies)
+    check_admin(local_user, True)
+
+    search_user = User.read(connection, username)
+    if request.method == "GET":
+        return render_template("admin/users/role.html", user=local_user, routes=routes, search_user=search_user,
+                               Role=Role)
+    else:
+        # set user punishment
+        try:
+            search_user.role = Role(request.form.get('role'))
+        except ValueError:
+            return render_template("admin/users/role.html", user=local_user, routes=routes, search_user=search_user,
+                                   Role=Role)
+
+        return redirect(search_user.url)
+
 @admin.route(routes["admin_user_censor_bio"].format("<username>"), methods=['GET', 'POST'])
 def user_censor_bio(username):
     connection = get_db_connection()
