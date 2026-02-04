@@ -9,9 +9,10 @@
             <p>{{ error_message }}</p>
         </div>
     {% endif %}
-    <form action="/posts/new" method="POST">
+    <form action="/posts/new" method="POST" enctype="multipart/form-data">
         <label for="title">Title:</label><input name="title" type="text" id="title"><br>
         <textarea id="content" name="content" rows="5" cols="40" placeholder="Once upon a time..."></textarea><br/>
+        <input type=file name=file multiple>
         <input class="submit" type="submit" value="Submit">
     </form>
 {% endblock %}

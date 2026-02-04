@@ -4,6 +4,7 @@ from routes import routes
 from models.comment import Comment
 from enum import Enum
 from models.userref import UserRef
+from models.image import Image
 
 class SortMethod(Enum):
     LATEST = 0
@@ -19,6 +20,7 @@ def check_empty(text:str):
         if char != " ":
             withoutSpaces += char
     return withoutSpaces == ""
+
 
 class Post:
     # --- CONSTRUCTORS ---
@@ -206,6 +208,22 @@ class Post:
                 pass
         cursor.close()
         return comments
+
+    @property
+    def images(self):
+        cursor = self.connection.cursor()
+        cursor.execute(
+            "SELECT id FROM images WHERE post = %s ORDER BY id",
+            (self.post_id,))
+        images = []
+        result = cursor.fetchall()
+        for image_id in result:
+            try:
+                images.append(Image.read(self.connection, image_id[0]))
+            except NameError:
+                pass
+        cursor.close()
+        return images
 
     # Gets all post's comments, including replies
     @property

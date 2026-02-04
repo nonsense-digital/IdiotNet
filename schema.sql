@@ -37,10 +37,8 @@ create table images
         constraint images_pk
             primary key,
     title         text default ''::text,
-    caption       text default ''::text,
     author        integer not null,
-    post          integer not null,
-    date_uploaded timestamp
+    post          integer not null
 );
 
 create table posts

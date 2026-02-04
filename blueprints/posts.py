@@ -1,9 +1,10 @@
-from flask import Blueprint, render_template, abort, request, redirect
+from flask import Blueprint, render_template, abort, request, redirect, send_file
 from helpers.auth import *
 from helpers.db import *
 from helpers.listings import paged_posts, SearchType
 from models.post import Post, check_empty
 from routes import routes, API
+from models.image import Image
 
 posts = Blueprint('posts', __name__, template_folder='../templates')
 
@@ -36,6 +37,7 @@ def latest():
 def new_post():
     connection = get_db_connection()
     local_user = get_authenticated_user(connection, request.cookies)
+    post_images = []
 
     if not local_user:
 
@@ -53,8 +55,25 @@ def new_post():
                 return render_template("posts/new.html", routes=routes, user=local_user, error_message="Content cannot be blank")
 
             staged_post = Post.publish(connection, title, content, local_user.user_id)
+            #now that the post object exists, add the relevant info to each image
+            images = request.files.getlist('file')
+            for file in images:
+                Image.create(connection, file, local_user.user_id, staged_post.post_id)
             current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} created post {staged_post.post_id}")
             return redirect(staged_post.url)
+
+@posts.route(routes["image"].format("<int:image_id>"))
+def image(image_id):
+    connection = get_db_connection()
+    try:
+        ext = Image.read(connection, image_id).file_ext
+        filename = 'uploads/' + str(image_id) + "." + ext
+        print(filename)
+        return send_file(filename, mimetype='image/'+ext)
+    except NameError:
+        abort(404, "Image not found")
+    except IOError:
+        abort(404, "Image not found")
 
 @posts.route(routes["post_edit"].format("<post_id>"), methods=['GET', 'POST'])
 def edit_post(post_id):
@@ -88,4 +107,5 @@ def edit_post(post_id):
         else:
 
             return redirect(routes["post"].format(post_id))
+
 
