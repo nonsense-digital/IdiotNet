@@ -78,7 +78,6 @@ def image(image_id):
     try:
         ext = Image.read(connection, image_id).file_ext
         filename = 'uploads/' + str(image_id) + "." + ext
-        print(filename)
         return send_file(filename, mimetype='image/'+ext)
     except NameError:
         abort(404, "Image not found")
