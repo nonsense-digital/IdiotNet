@@ -1,4 +1,5 @@
 # a whole ton of imported modules
+from __future__ import annotations
 from flask import Flask, request, abort, redirect
 from blueprints.posts import posts
 from blueprints.settings import settings
@@ -13,11 +14,24 @@ import os
 from dotenv import load_dotenv
 from logging.config import dictConfig
 from blueprints.main import main
+from models.client import Client
 from models.permissions import PunishmentType
+from werkzeug.middleware.proxy_fix import ProxyFix
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 # Set up Flask app
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1) # thanks to https://sentry.io/answers/get-the-ip-address-of-a-visitor-in-flask/
 load_dotenv()
+
+# thanks to https://flask-limiter.readthedocs.io/en/stable/
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["20 per second"],
+    storage_uri="memory://",
+)
 
 # Configures logging for the Flask server
 # Code snippet from https://flask.palletsprojects.com/en/stable/logging/
@@ -60,39 +74,18 @@ dictConfig({
 requests_log = {}
 temp_banned = []
 @app.before_request
-def limit_requests():
-    # rate limit params
-    ip = request.remote_addr
-    now = datetime.datetime.now(datetime.UTC)
-    window = 2      # seconds
-    limit = 17       # max requests per window
-
-    # temporary IP ban message
-    if ip in temp_banned and request.endpoint != 'static':
-        current_app.logger.warning(f"[IP {request.remote_addr}] Cannot access the server due to a temporary IP ban.")
-        abort(429, description="You have been temporarily banned.")
-
-    # add ban if not in ban list already
-    if ip not in requests_log:
-        requests_log[ip] = []
-
-    # keep only timestamps within the window
-    requests_log[ip] = [t for t in requests_log[ip] if now - t < datetime.timedelta(seconds=window)]
-
-    # 429 error for too many requests
-    if len(requests_log[ip]) >= limit and request.endpoint != 'static':
-        temp_banned.append(ip)
-        current_app.logger.warning(f"[IP {request.remote_addr}] IP has been temporarily banned for spamming.")
-        abort(429, description="Too Many Requests")
-    requests_log[ip].append(now)
-
+def before_request():
     # check if user is banned
-    connection = get_db_connection()
-    local_user = get_authenticated_user(connection, request.cookies)
-    if local_user:
-        if request.endpoint and request.endpoint != 'errors.banned_message' and request.endpoint != 'static' and request.endpoint != 'static' and request.endpoint != 'users.logout':
-            if local_user.check_punishment() == PunishmentType.BAN or local_user.check_punishment() == PunishmentType.PERMABAN:
+    if request.endpoint and request.endpoint != 'static':
+        connection = get_db_connection()
+        local_user = get_authenticated_user(connection, request.cookies)
+        client = Client(connection, request.remote_addr)
+        if request.endpoint != 'errors.banned_message' and request.endpoint != 'users.logout':
+            if client.check_punishment() == PunishmentType.BAN:
                 return redirect("/banned")
+            if local_user:
+                if local_user.check_punishment() == PunishmentType.BAN or local_user.check_punishment() == PunishmentType.PERMABAN:
+                    return redirect("/banned")
 
         
 

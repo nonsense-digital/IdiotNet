@@ -1,14 +1,16 @@
 {% extends 'base.html' %}
 
-{% block title %}IdiotNet | Punish User{% endblock %}
+{% block title %}IdiotNet | Punish Client{% endblock %}
 {% block content %}
-    <h1>Punish User</h1>
-    {% include 'admin/users/user-info.html' %}
+    <h1>Punish Client</h1>
+    {% include 'admin/clients/client-info.html' %}
     <form action="{{ request.url }}" id="punishment_form" method="post">
             <label for="punishment" id="punishment_label">Punishment: </label>
                 <select id="punishment" name="punishment">
                     {% for punishment in PunishmentType.__members__.values() %}
-                        <option value="{{ punishment.value }}">{{ punishment.value.capitalize() }}</option>
+                        {% if punishment.value != 'permaban' %}
+                            <option value="{{ punishment.value }}">{{ punishment.value.capitalize() }}</option>
+                        {% endif %}
                     {% endfor %}
                 </select>
             <label for="expiration" id="expiration_label">Expiration: </label>

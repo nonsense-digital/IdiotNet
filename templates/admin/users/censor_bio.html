@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block title %}IdiotNet | Censor Bio{% endblock %}
+{% block content %}
+    <h1>Censor Bio</h1>
+    <h2>{{ search_user.username }}</h2>
+    <pre>{{ search_user.bio }}</pre>
+    <form action="{{ request.url }}" id="punishment_form" method="post">
+        <input id="submit" name="submit" type="submit" value="Censor">
+    </form>
+{% endblock %}

@@ -2,6 +2,8 @@ from flask import Blueprint, render_template, abort, request, redirect, make_res
 from helpers.auth import *
 from helpers.db import *
 from helpers.listings import paged_posts, SearchType, search_posts
+from models.client import Client
+from models.permissions import PunishmentType
 from models.post import Post
 from models.user import User, check_username, check_password
 from routes import routes
@@ -83,7 +85,7 @@ def login():
                 local_user = User.read(connection, username)
                 if check_password_hash(local_user.password_hash, password):
                     current_app.logger.info(f"[IP {request.remote_addr}] User {username} logged in successfully.")
-                    token = Token.create(connection, local_user.user_id)
+                    token = Token.create(connection, local_user.user_id, request.remote_addr)
                     resp = make_response(redirect(routes["home"]))
 
                     resp.set_cookie('token', token.token_id)
@@ -102,20 +104,22 @@ def login():
 def user_edit(username):
     connection = get_db_connection()
     local_user = get_authenticated_user(connection, request.cookies)
+    client = Client(connection, request.remote_addr)
 
     if not local_user:
 
         return redirect(routes["login"])
     else:
         if request.method == 'GET':
-
-            return render_template("users/edit.html", routes=routes, user=local_user)
+            return render_template("users/edit.html", routes=routes, user=local_user, client=client)
         else:
-            content = request.form.get('content')
-
-            local_user.bio = content
-            current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} edited their user bio")
-            return redirect(routes["user"].format(local_user.username))
+            if local_user.punishment_status != PunishmentType.MUTE:
+                content = request.form.get('content')
+                local_user.bio = content
+                current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} edited their user bio")
+                return redirect(routes["user"].format(local_user.username))
+            else:
+                return render_template("users/edit.html", routes=routes, user=local_user, client=client)
 
 
 @users.route(routes["signup"], methods=['GET', 'POST'])
@@ -155,7 +159,7 @@ def signup():
             except NameError:
                 password_hash = hash_password(password)
                 local_user = User.create(connection, username=username, password_hash=password_hash)
-                token = Token.create(connection, local_user.user_id)
+                token = Token.create(connection, local_user.user_id, request.remote_addr)
 
                 resp = make_response(redirect(routes["home"]))
                 resp.set_cookie('token', token.token_id)

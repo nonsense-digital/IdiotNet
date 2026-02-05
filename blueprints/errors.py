@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, abort, request, redirect, make_res
 from helpers.auth import *
 from helpers.db import *
 from helpers.listings import paged_posts, SearchType, search_posts
+from models.client import Client
 from models.post import Post
 from models.user import User, check_username, check_password
 from models.permissions import Role, PunishmentType
@@ -43,13 +44,13 @@ def fake_error():
 def banned_message():
     connection = get_db_connection()
     local_user = get_authenticated_user(connection, request.cookies)
+    client = Client(connection, request.remote_addr)
 
-    expiration = local_user.punishment_expiration
-    reason = local_user.punishment_reason
-
-    if local_user.punishment_status == PunishmentType.BAN or local_user.punishment_status == PunishmentType.PERMABAN:
-        return render_template('errors/banned.html', user=local_user, routes=routes)
-    else:
-        return redirect("/")
+    if local_user:
+        if local_user.punishment_status == PunishmentType.BAN or local_user.punishment_status == PunishmentType.PERMABAN:
+            return render_template('errors/user-banned.html', user=local_user, routes=routes)
+    if client.punishment_status == PunishmentType.BAN:
+        return render_template('errors/client-banned.html', user=local_user, client=client, routes=routes)
+    return redirect("/")
 
 

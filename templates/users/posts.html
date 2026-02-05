@@ -3,5 +3,5 @@
 {% block title %}IdiotNet | {{ search_user.username }}'s {{ type }}{% endblock %}
 {% block content %}
     <h1><a href="{{ search_user.url }}">{{ search_user.username }}'s</a> {{ type }}</h1>
-    {% include 'table.html' %}
+    {% include 'listings/posts.html' %}
 {% endblock %}

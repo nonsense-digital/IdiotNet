@@ -5,6 +5,7 @@ from models.post import Post
 from routes import routes
 from enum import Enum
 from models.permissions import PunishmentType, Role
+from models.comment import Comment
 
 # Characters allowed in Usernames
 ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyz1234567890_"
@@ -111,6 +112,34 @@ class User:
             raise NameError("User not found")
         except TypeError:
             raise NameError("User not found")
+
+    # finds a list of all users, sorted by date created
+    @staticmethod
+    def latest(connection, count: int, offset: int = 0):
+        cursor = connection.cursor()
+        query = "SELECT id FROM users ORDER BY date_created DESC OFFSET %s LIMIT %s"
+        cursor.execute(query, (offset, count))
+        data = cursor.fetchall()
+        clients = []
+        for record in data:
+            p = User.read(connection, record[0])
+            clients.append(p)
+        return clients
+
+    # finds a list of all punished users, sorted by punishment expiration
+    @staticmethod
+    def punished(connection, count: int, offset: int = 0):
+        cursor = connection.cursor()
+        query = "SELECT id FROM users WHERE punishment_status != 'none' ORDER BY punishment_expiration DESC OFFSET %s LIMIT %s"
+        cursor.execute(query, (offset, count))
+        data = cursor.fetchall()
+        users = []
+        for record in data:
+            p = User.read(connection, record[0])
+            users.append(p)
+        return users
+
+
 
     # --- GETTERS AND SETTERS ----
     # When a User object's atomic properties (username, email, date created, etc.) are called, a getter function retrieves them from its private field.
@@ -262,21 +291,21 @@ class User:
         result = [x[0] for x in cursor.fetchall()]
         return result
 
-    # Gets the user's comments from the database, returning a list of Comment objects
+    # Gets the user's posts from the database, returning a list of Post objects
     @property
     def comments(self):
-        # query a list of comment ids
+        # query a list of post ids
         cursor = self.connection.cursor()
         cursor.execute("SELECT id FROM comments WHERE author = %s ORDER BY date_posted DESC", (self.user_id,))
         result = cursor.fetchall()
 
-        # convert to comment objects
+        # convert to post objects
         comments = []
-        for comments_id in result:
-            comments.append(Post.read(self.connection, comments_id[0]))
+        for post_id in result:
+            comments.append(Comment.read(self.connection, post_id[0]))
         return comments
 
-    # Gets the user's comment ids from the database (for when the comment objects are unnecessary)
+    # Gets the user's post ids from the database (for when the post objects are unnecessary)
     @property
     def comment_ids(self):
         # query a list of post ids
@@ -322,7 +351,7 @@ class User:
         # convert to user objects
         users = []
         for user_id in result:
-            users.append(User.read(self.connection, user_id))
+            users.append(User.read(self.connection, user_id[0]))
         return users
 
     # Gets a list of the user's followers ids (for when the user objects are unnecessary)
@@ -357,6 +386,25 @@ class User:
         result = cursor.fetchall()
         return result
 
+    # method that gets all active auth tokens (sessions) on the user
+    @property
+    def tokens(self):
+        from models.auth_token import Token
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT id FROM tokens WHERE user_id = %s", (self.user_id,))
+        result = cursor.fetchall()
+        tokens = []
+        for token in result:
+            tokens.append(Token.read(self.connection, token[0]))
+        return tokens
+
+    # method that gets the ids of all active auth tokens (sessions) on the client
+    @property
+    def token_ids(self):
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT id FROM tokens WHERE user_id = %s", (self.user_id,))
+        return [x[0] for x in cursor.fetchall()]
+
     # Updates the atomic values stored in the User
     def update_values(self) -> None:
         cursor = self.connection.cursor()
@@ -377,6 +425,32 @@ class User:
     # --- USER-SPECIFIC METHODS ---
     # These are various user-specific actions one can perform.
 
+    # delete all user-generated data
+    # used in a permaban
+    def clear_data(self):
+        # delete all posts
+        for post in self.posts:
+            post.delete()
+
+        # clear bio
+        self.bio = ""
+
+        # remove followed
+        for followed in self.following_ids:
+            self.unfollow(followed)
+
+        # remove followers
+        for follower in self.followers:
+            follower.unfollow(self.user_id)
+
+        # remove likes
+        for like in self.liked_post_ids:
+            self.unlike(like)
+
+        # remove all comments
+        for comment in self.comments:
+            comment.delete()
+
     # check if the user has an active punishment
     def check_punishment(self, refresh:bool=False) -> PunishmentType:
         # refresh values if requested
@@ -384,7 +458,8 @@ class User:
             self.update_values()
 
         # check if punishment has expired, if so then reset the punishment
-        if self.__punishment_expiration__ < datetime.datetime.now():
+        # (this doesn't apply to permabans, which are irreversible)
+        if self.__punishment_expiration__ < datetime.datetime.now() and self.__punishment_status__ != PunishmentType.PERMABAN:
             self.punishment_status = PunishmentType.NONE
 
         # return punishment status (if any)

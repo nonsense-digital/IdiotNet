@@ -3,11 +3,21 @@
 {% block title %}IdiotNet | New Post{% endblock %}
 {% block content %}
     <h1>New Post</h1>
-    {% if error_message %}
-        <div id="error">
-            <h3>Error</h3>
-            <p>{{ error_message }}</p>
-        </div>
+    {% if user.punishment_status.value != "mute" and client.punishment_status.value != "mute" %}
+        {% if error_message %}
+            <div id="error">
+                <h3>Error</h3>
+                <p>{{ error_message }}</p>
+            </div>
+        {% endif %}
+        <form action="/posts/new" method="POST">
+            <label for="title">Title:</label><input name="title" type="text" id="title"><br>
+            <textarea id="content" name="content" rows="5" cols="40" placeholder="Once upon a time..."></textarea><br/>
+            <input class="submit" type="submit" value="Submit">
+        </form>
+    {% else %}
+        <p>You have been muted until {{ user.punishment_expiration.strftime("%A, %B %d, %Y %H:%M") }} for: <br/>
+            {{ user.punishment_reason}}</p>
     {% endif %}
     <form action="/posts/new" method="POST" enctype="multipart/form-data">
         <label for="title">Title:</label><input name="title" type="text" id="title"><br>

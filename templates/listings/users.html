@@ -1,0 +1,60 @@
+<table id="latest-table">
+    <tr>
+        <th>ID</th>
+        <th>Username</th>
+        {% if is_admin_view %}<th>Email</th>{% endif %}
+        <th>Followers</th>
+        <th>Posts</th>
+        <th>Liked Posts</th>
+        <th>Comments</th>
+        <th>Date Joined</th>
+        {% if is_admin_view %}
+            {% if user.role.value == 'admin' %}<th>Sessions</th>{% endif %}
+            <th>Punishment</th>
+            <th>Punishment Expiration</th>
+            <th>Punishment Reason</th>
+        {% endif %}
+    </tr>
+    {% for search_user in users %}
+        <tr>
+            <td>{{ search_user.user_id }}</td>
+            <td><a href="{{ search_user.url }}">{{ search_user.username }}</a></td>
+            {% if is_admin_view %}<td>{{ search_user.email }}</td>{% endif %}
+            <td>{{ search_user.follower_ids|length }}</td>
+            <td>{{ search_user.post_ids|length }}</td>
+            <td>{{ search_user.liked_post_ids|length }}</td>
+            <td>{{ search_user.comment_ids|length }}</td>
+            <td>{{ search_user.date_created.strftime("%Y-%m-%d %H:%M:%S.%f") }}</td>
+            {% if is_admin_view %}
+                {% if user.role.value == 'admin' %}
+                    <td><a href="{{ routes["admin_user_sessions"].format(search_user.user_id) }}">
+                            {{ search_user.token_ids|length }} Sessions </a></td>
+                {% endif %}
+                <td> {{ search_user.punishment_status.value.capitalize() }} </td>
+                <td>
+                    {% if search_user.punishment_status != 'none' and search_user.punishment_status != 'permaban' %}
+                        {{ search_user.punishment_expiration.strftime("%Y-%m-%d %H:%M") }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+                <td>
+                    {% if search_user.punishment_status != 'none'%}
+                        {{ search_user.punishment_reason }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+            {% endif %}
+        </tr>
+    {% endfor %}
+</table>
+
+
+{% if page > 1 %}
+    <a href="{{  url_for(request.endpoint, **combine_view_args(request.args,request.view_args,{'page':page-1}))|string }}">Previous</a>
+{% endif %}
+<span>Page {{ page }}</span>
+{% if not is_last_page %}
+    <a href="{{ url_for(request.endpoint, **combine_view_args(request.args,request.view_args,{'page':page + 1}))|string}}">Next</a>
+{% endif %}
