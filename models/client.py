@@ -12,7 +12,6 @@ class Client:
     # If one doesn't exist yet, create a new one and return the object
     def __init__(self, connection, ip:str):
         # define fields
-        self.__rate_limits__ = None
         self.__punishment_reason__ = None
         self.__punishment_expiration__ = None
         self.__punishment_status__ = None
@@ -73,7 +72,6 @@ class Client:
             self.__punishment_status__ = PunishmentType(result[2])
             self.__punishment_expiration__ = result[3]
             self.__punishment_reason__ = result[4]
-            self.__rate_limits__ = result[5]
         else:
             raise ValueError("Client doesn't exist")
         cursor.close()
@@ -131,18 +129,6 @@ class Client:
                        (punishment_reason, self.ip))
         self.connection.commit()
         self.__punishment_reason__ = punishment_reason
-        cursor.close()
-
-    @property
-    def rate_limits(self):
-        return self.__rate_limits__
-    @rate_limits.setter
-    def rate_limits(self, rate_limits: Role):
-        cursor = self.connection.cursor()
-        cursor.execute("UPDATE clients set rate_limits = %s where ip_address = %s",
-                       (rate_limits, self.ip))
-        self.connection.commit()
-        self.__rate_limits__ = rate_limits
         cursor.close()
 
     # method that gets all active auth tokens (sessions) on the client

@@ -102,7 +102,7 @@ INSERT INTO config VALUES ('join-code', null);
 INSERT INTO config VALUES ('allow_signup', true);
 INSERT INTO config VALUES ('approve_posts', false);
 
-create table public.clients
+create table clients
 (
     ip_address            inet not null
         constraint clients_pk
@@ -111,7 +111,6 @@ create table public.clients
     punishment_status     punishmenttype default 'none'::punishmenttype,
     punishment_expiration timestamp      default now(),
     punishment_reason     varchar(50)    default ''::character varying,
-    rate_limits           integer        default 0
 );
 
 create table follows
