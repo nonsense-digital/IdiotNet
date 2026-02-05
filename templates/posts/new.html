@@ -19,4 +19,10 @@
         <p>You have been muted until {{ user.punishment_expiration.strftime("%A, %B %d, %Y %H:%M") }} for: <br/>
             {{ user.punishment_reason}}</p>
     {% endif %}
+    <form action="/posts/new" method="POST" enctype="multipart/form-data">
+        <label for="title">Title:</label><input name="title" type="text" id="title"><br>
+        <textarea id="content" name="content" rows="5" cols="40" placeholder="Once upon a time..."></textarea><br/>
+        <input type=file name=file multiple>
+        <input class="submit" type="submit" value="Submit">
+    </form>
 {% endblock %}
