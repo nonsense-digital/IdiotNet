@@ -1,6 +1,6 @@
 # random useful functions that make things easier
 
-# nullpack unpakcs a tuple from the datbase if it is not null
+# nullpack unpacks a tuple from the database if it is not null
 # otherwise, just return null
 def nullPack(value:tuple):
     if value is None:

@@ -2,6 +2,8 @@ import os
 import psycopg2
 from flask import g, current_app
 
+from models.config import Config
+
 DB_VERSION = "1.0"
 
 # check database version to make sure it is up to date
@@ -9,18 +11,13 @@ def check_db_version():
     global DB_VERSION
     connection = get_db_connection()
 
-    cursor = connection.cursor()
     try:
-        cursor.execute("SELECT value FROM config WHERE key = 'version'")
-        database_version = cursor.fetchone()[0]
-        cursor.close()
+        config = Config(connection)
         connection.close()
-        if database_version != DB_VERSION:
-            current_app.logger.fatal(f"Expected database version {DB_VERSION}, got {database_version} instead.")
-            raise RuntimeError(f"Expected database version {DB_VERSION}, got {database_version} instead.")
+        if config.version != DB_VERSION:
+            current_app.logger.fatal(f"Expected database version {DB_VERSION}, got {config.version} instead.")
+            raise RuntimeError(f"Expected database version {DB_VERSION}, got {config.version} instead.")
     except Exception as error:
-        cursor.close()
-        connection.close()
         current_app.logger.error(f"Invalid database schema. {error}")
         raise RuntimeError(f"Invalid database schema. {error}")
 

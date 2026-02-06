@@ -126,6 +126,11 @@ def combine_view_args(*args):
 def utility_processor():
     return dict(combine_view_args=combine_view_args)
 
+# before the server really does anything, make sure the database schema is correct
+# an up-to-date schema will prevent weird database glitches from happening
+with app.app_context():
+    check_db_version()
+
 # register blueprints
 app.register_blueprint(main)
 app.register_blueprint(users)
