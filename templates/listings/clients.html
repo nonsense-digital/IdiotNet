@@ -24,7 +24,7 @@
     {% endfor %}
 </table>
 
-
+<!-- Basic pagination -->
 {% if page > 1 %}
     <a href="{{  url_for(request.endpoint, **combine_view_args(request.args,request.view_args,{'page':page-1}))|string }}">Previous</a>
 {% endif %}

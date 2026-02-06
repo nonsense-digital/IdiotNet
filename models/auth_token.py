@@ -12,6 +12,7 @@ class Token:
     # If you are trying to read a pre-existing token from the database, use read() instead
     def __init__(self, user_id):
         self.token_id = None
+        self.connection = None
         self.__user_id__ = user_id
         self.__valid_until__ = None
         self.__is_deleted__ = False
@@ -26,6 +27,7 @@ class Token:
         except Exception as e:
             raise NameError("User not found")
         t = Token(user_id)
+        t.connection = connection
         t.token_id = str(uuid.uuid4())
         t.__client_ip__ = client_ip
         t.__valid_until__ = datetime.now() + timedelta(days=7)
@@ -47,8 +49,10 @@ class Token:
             raise NameError("Token not found")
         else:
             t = Token(data[1])
+            t.connection = connection
             t.token_id = token_id
             t.__valid_until__ = data[2]
+            t.__client_ip__ = data[3]
             return t
 
     # --- GETTERS AND SETTERS ----
@@ -58,6 +62,10 @@ class Token:
         if self.__is_deleted__:
             raise NameError(f"Token {self.token_id} has already been deleted.")
         return self.__user_id__
+
+    @property
+    def user(self):
+        return User.read(self.connection, self.user_id)
 
     @property
     def valid_until(self):
@@ -85,11 +93,11 @@ class Token:
     # These are various token-specific actions one can perform
 
     # delete the token (effectively logging the user out)
-    def delete(self, connection):
+    def delete(self):
         if self.__is_deleted__:
             raise NameError(f"Token {self.token_id} has already been deleted.")
         # Delete the token from the database
-        cursor = connection.cursor()
+        cursor = self.connection.cursor()
         cursor.execute("DELETE FROM tokens WHERE id = %s", (self.token_id,))
-        connection.commit()
+        self.connection.commit()
         self.__is_deleted__ = True

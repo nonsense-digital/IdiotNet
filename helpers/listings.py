@@ -82,3 +82,17 @@ def paged_users(page:int, **filters) -> tuple:
     users = search_users(20, page - 1, **filters)
     is_last_page = len(users) < 20
     return users, is_last_page
+
+def search_sessions(count:int, offset:int=0, search_user=None, search_client=None) -> tuple:
+    if search_user is not None:
+        sessions = search_user.tokens[offset * count:offset * count + count]
+    elif search_client is not None:
+        sessions = search_client.tokens[offset * count:offset * count + count]
+    else:
+        raise ValueError("No target provided")
+    return sessions
+
+def paged_sessions(page:int, **filters) -> tuple:
+    sessions = search_sessions(20, page - 1, **filters)
+    is_last_page = len(sessions) < 20
+    return sessions, is_last_page

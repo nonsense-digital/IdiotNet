@@ -4,7 +4,7 @@ from flask import g, current_app
 
 DB_VERSION = "1.0"
 
-# check database version
+# check database version to make sure it is up to date
 def check_db_version():
     global DB_VERSION
     connection = get_db_connection()

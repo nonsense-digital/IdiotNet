@@ -6,6 +6,7 @@ from routes import routes
 
 settings = Blueprint('settings', __name__, template_folder='../templates')
 
+# change your password, requiring the old one, the new one, and a confirmation
 @settings.route(routes["change_password"], methods=['GET', 'POST'])
 def change_password():
     connection = get_db_connection()

@@ -10,6 +10,7 @@ from models.image import Image
 
 posts = Blueprint('posts', __name__, template_folder='../templates')
 
+# view a user-generated post, with a title, content, images, comments, and additional options for OP and admins
 @posts.route(routes["post"].format("<int:post_id>"))
 def post(post_id):
     connection = get_db_connection()
@@ -21,6 +22,7 @@ def post(post_id):
         current_app.logger.warning(f"[IP {request.remote_addr}] Post {post_id} not found.")
         abort(404, "Post not found")
 
+# a list of the latest posts
 @posts.route(routes["latest"])
 def latest():
     connection = get_db_connection()
@@ -33,8 +35,7 @@ def latest():
     posts, is_last_page = paged_posts(page, search_type=SearchType.ALL)
     return render_template('posts/latest.html', routes=routes, user=local_user, posts=posts, is_last_page=is_last_page, page=page)
 
-
-
+# menu to create a new post with title, content, and images
 @posts.route(routes["new_post"], methods=['GET', 'POST'])
 def new_post():
     connection = get_db_connection()
@@ -72,6 +73,7 @@ def new_post():
             else:
                 return render_template("posts/new.html", routes=routes, user=local_user, client=client)
 
+# display an image attachment
 @posts.route(routes["image"].format("<int:image_id>"))
 def image(image_id):
     connection = get_db_connection()
@@ -84,6 +86,7 @@ def image(image_id):
     except IOError:
         abort(404, "Image not found")
 
+# edit an already-created post
 @posts.route(routes["post_edit"].format("<post_id>"), methods=['GET', 'POST'])
 def edit_post(post_id):
     connection = get_db_connection()

@@ -1,12 +1,11 @@
 import datetime
-
 import bcrypt
 from werkzeug.exceptions import BadRequestKeyError
-
 from models.auth_token import Token
 from models.user import User
 from flask import g, current_app
 
+# get a user object from an auth token cookie
 def get_authenticated_user(connection, cookies):
     if 'token' in cookies:
         try:

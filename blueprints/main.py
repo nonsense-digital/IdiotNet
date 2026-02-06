@@ -14,13 +14,14 @@ def index():
     latest_posts = search_posts(10, search_type=SearchType.ALL)
     return render_template('index.html', routes=routes, user=local_user, latest_posts=latest_posts)
 
-# Simple description of the site and who made it
+# Simple description of the site and who made it, and some rules
 @main.route(routes["about"])
 def about():
     connection = get_db_connection()
     local_user = get_authenticated_user(connection, request.cookies)
     return render_template('about.html', routes=routes, user=local_user)
 
+# post search function, accessible from the search bar on top
 @main.route(routes["search"])
 def search():
     connection = get_db_connection()

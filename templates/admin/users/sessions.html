@@ -1,10 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+<!DO{% extends 'base.html' %}
 
-</body>
-</html>
+{% block title %}IdiotNet | User Sessions{% endblock %}
+{% block content %}
+    {% include 'admin/users/user-info.html' %}
+    {% include 'listings/sessions.html' %}
+{% endblock %}

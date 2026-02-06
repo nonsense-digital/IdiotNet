@@ -75,20 +75,25 @@ requests_log = {}
 temp_banned = []
 @app.before_request
 def before_request():
-    # check if user is banned
+    # only track the client if it is requesting a non-static endpoint
     if request.endpoint and request.endpoint != 'static':
+        # get user, db, client info
         connection = get_db_connection()
         local_user = get_authenticated_user(connection, request.cookies)
         client = Client(connection, request.remote_addr)
+
+        # don't do the ban message if the user is already on ban (we don't want an infinite loop)
         if request.endpoint != 'errors.banned_message' and request.endpoint != 'users.logout':
+            # check for IP ban
             if client.check_punishment() == PunishmentType.BAN:
                 return redirect("/banned")
+            # check for user ban
             if local_user:
                 if local_user.check_punishment() == PunishmentType.BAN or local_user.check_punishment() == PunishmentType.PERMABAN:
                     return redirect("/banned")
 
         
-
+# after-request housekeeping
 @app.after_request
 def after_request(response):
     # if the delete token flag is present, delete the invalid token
@@ -106,6 +111,7 @@ def after_request(response):
             response.delete_cookie('token')
     return response
 
+# server shutdown cleanup
 @app.teardown_appcontext
 def teardown(exception):
     close_db_connection()
@@ -120,6 +126,7 @@ def combine_view_args(*args):
 def utility_processor():
     return dict(combine_view_args=combine_view_args)
 
+# register blueprints
 app.register_blueprint(main)
 app.register_blueprint(users)
 app.register_blueprint(posts)

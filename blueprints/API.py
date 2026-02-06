@@ -9,6 +9,8 @@ from routes import routes, API
 
 api = Blueprint('api', __name__, template_folder='../templates')
 
+# api endpoint to like/unlike a post
+# returns an error message if the request failed, and a success message if it succeeded
 @api.route(API["like_post"].format("<int:post_id>"), methods=['POST'])
 def like_post(post_id):
     connection = get_db_connection()
@@ -38,6 +40,8 @@ def like_post(post_id):
     except NameError as e:
         abort(404, "Post not found")
 
+# api endpoint to follow/unfollow a user
+# returns an error message if the request failed, and a success message if it succeeded
 @api.route(API["follow_user"].format("<username>"), methods=['POST'])
 def follow_user(username):
     connection = get_db_connection()
@@ -68,6 +72,7 @@ def follow_user(username):
     except NameError as e:
         abort(404, "User not found")
 
+# api endpoint to comment on a post
 @api.route(API["comment_post"].format("<int:post_id>"), methods=['POST'])
 def comment_post(post_id):
     connection = get_db_connection()
@@ -83,6 +88,7 @@ def comment_post(post_id):
         current_app.logger.warning(f"[IP {request.remote_addr}] {local_user.username} cannot comment,  Post {post_id} not found.")
         abort(404, "Post not found")
 
+# api endpoint to reply to a comment
 @api.route(API["reply_comment"].format("<int:root_comment_id>"), methods=['POST'])
 def reply_comment(root_comment_id):
     connection = get_db_connection()

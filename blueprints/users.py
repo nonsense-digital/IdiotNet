@@ -10,7 +10,8 @@ from routes import routes
 
 users = Blueprint('users', __name__, template_folder='../templates')
 
-
+# a user's profile, consisting of username, followers, mod status, bio, latest posts, liked posts
+# and also extra menus for your own profile and for admins
 @users.route(routes["user"].format("<username>"))
 def user(username):
     try:
@@ -25,7 +26,7 @@ def user(username):
         current_app.logger.warning(f"[IP {request.remote_addr}] User {username} not found.")
         abort(404, "User not found")
 
-
+# a list displaying the latest posts of a specific user
 @users.route(routes["user_posts"].format("<username>"))
 def user_posts(username):
     try:
@@ -45,7 +46,7 @@ def user_posts(username):
         current_app.logger.warning(f"[IP {request.remote_addr}] User {username} not found.")
         abort(404, "User not found")
 
-
+# a list displaying the latest liked posts of a specific user
 @users.route(routes["user_liked_posts"].format("<username>"))
 def user_liked_posts(username):
     try:
@@ -65,7 +66,7 @@ def user_liked_posts(username):
         current_app.logger.warning(f"[IP {request.remote_addr}] User {username} not found.")
         abort(404, "User not found")
 
-
+# login menu, using password hashing and auth tokens for secure authentication
 @users.route(routes["login"], methods=['GET', 'POST'])
 def login():
     connection = get_db_connection()
@@ -100,6 +101,7 @@ def login():
                                        error_message=f'User {username} does not exist')
 
 
+# edit your bio on your profile
 @users.route(routes["user_edit"].format("<username>"), methods=['GET', 'POST'])
 def user_edit(username):
     connection = get_db_connection()
@@ -121,7 +123,7 @@ def user_edit(username):
             else:
                 return render_template("users/edit.html", routes=routes, user=local_user, client=client)
 
-
+# create your idiotnet account, using password hashing and auth tokens
 @users.route(routes["signup"], methods=['GET', 'POST'])
 def signup():
     connection = get_db_connection()
@@ -166,7 +168,7 @@ def signup():
                 current_app.logger.info(f"[IP {request.remote_addr}] {username} created new account")
                 return resp
 
-
+# log out by deleting the auth cookie and removing the token from the database
 @users.route(routes["logout"])
 def logout():
     connection = get_db_connection()
@@ -175,7 +177,7 @@ def logout():
     if not local_user:
         return redirect(routes["home"])
     else:
-        token.delete(connection)
+        token.delete()
         current_app.logger.info(
             f"[IP {request.remote_addr}] {local_user.username} logged out")
         return redirect(routes["home"])

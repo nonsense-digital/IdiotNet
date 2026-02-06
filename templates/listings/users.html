@@ -27,7 +27,7 @@
             <td>{{ search_user.date_created.strftime("%Y-%m-%d %H:%M:%S.%f") }}</td>
             {% if is_admin_view %}
                 {% if user.role.value == 'admin' %}
-                    <td><a href="{{ routes["admin_user_sessions"].format(search_user.user_id) }}">
+                    <td><a href="{{ routes["admin_user_sessions"].format(search_user.username) }}">
                             {{ search_user.token_ids|length }} Sessions </a></td>
                 {% endif %}
                 <td> {{ search_user.punishment_status.value.capitalize() }} </td>

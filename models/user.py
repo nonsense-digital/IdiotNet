@@ -391,7 +391,7 @@ class User:
     def tokens(self):
         from models.auth_token import Token
         cursor = self.connection.cursor()
-        cursor.execute("SELECT id FROM tokens WHERE user_id = %s", (self.user_id,))
+        cursor.execute("SELECT id FROM tokens WHERE user_id = %s ", (self.user_id,))
         result = cursor.fetchall()
         tokens = []
         for token in result:

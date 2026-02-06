@@ -10,36 +10,42 @@ from routes import routes
 
 errors = Blueprint('errors', __name__, template_folder='../templates')
 
+# confused monkey 404 not found error message
 @errors.app_errorhandler(404)
 def handle_404(e):
     connection = get_db_connection()
     local_user = get_authenticated_user(connection, request.cookies)
     return render_template('errors/404.html', user=local_user, routes=routes), 404
 
+# gandalf 403 access forbidden error message
 @errors.app_errorhandler(403)
 def handle_403(e):
     connection = get_db_connection()
     local_user = get_authenticated_user(connection, request.cookies)
     return render_template('errors/403.html', user=local_user, routes=routes), 404
 
+# can of spam 429 too many requests message
 @errors.app_errorhandler(429)
 def handle_429(e):
     connection = get_db_connection()
     local_user = get_authenticated_user(connection, request.cookies)
     return render_template('errors/429.html', user=local_user, routes=routes), 429
 
+# epic explosion 500 server error message
 @errors.app_errorhandler(500)
 def handle_500(e):
     connection = get_db_connection()
     local_user = get_authenticated_user(connection, request.cookies)
     return render_template('errors/500.html', user=local_user, routes=routes), 500
 
+# fake error for kicks and giggles
 @errors.route("/error")
 def fake_error():
     connection = get_db_connection()
     local_user = get_authenticated_user(connection, request.cookies)
     return render_template('errors/500.html', user=local_user, routes=routes), 500
 
+# ban screen with expiration date (if applicable) and reason
 @errors.route("/banned")
 def banned_message():
     connection = get_db_connection()
