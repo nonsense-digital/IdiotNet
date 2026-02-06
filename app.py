@@ -69,14 +69,14 @@ dictConfig({
     }
 })
 
-# thanks to my good friend Tristin Porter for the rate limit system
+# not thanks to my good friend Tristin Porter for the rate limit system (it slowed down the website)
 # https://github.com/nonsense-digital/IdiotNet/issues/1
 requests_log = {}
 temp_banned = []
 @app.before_request
 def before_request():
     # only track the client if it is requesting a non-static endpoint
-    if request.endpoint and request.endpoint != 'static':
+    if request.endpoint and request.endpoint != 'static' and request.endpoint != 'post.images':
         # get user, db, client info
         connection = get_db_connection()
         local_user = get_authenticated_user(connection, request.cookies)
@@ -86,7 +86,7 @@ def before_request():
         if request.endpoint != 'errors.banned_message' and request.endpoint != 'users.logout':
             # check for IP ban
             if client.check_punishment() == PunishmentType.BAN:
-                return redirect("/banned")
+               return redirect("/banned")
             # check for user ban
             if local_user:
                 if local_user.check_punishment() == PunishmentType.BAN or local_user.check_punishment() == PunishmentType.PERMABAN:
