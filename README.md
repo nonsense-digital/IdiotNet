@@ -22,5 +22,8 @@ Once you have Python and Postgres installed, you can run the following:
 5. Follow [this guide](https://www.postgresql.org/docs/current/tutorial-createdb.html) to create a new Postrgres database
 6. Set up the database schema with `psql -U <username> -d <database name> -f schema.sql`
 7. Once set up, IdiotNet can be run with `python -m flask run --host=0.0.0.0`
+8. The server will come with a default admin user. The username is `admin` and the password is `stupid1A@`. 
+Remember to change the password as soon as possible.
+9. Enjoy using IdiotNet!
 
 Alternatively, you can use the many convenient features in PyCharm to automate these processes.
