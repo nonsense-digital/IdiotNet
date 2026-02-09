@@ -28,6 +28,22 @@ def check_admin(local_user:User, admin_only=False):
         case _:
             abort(403)
 
+# logic to log punishments for IPs and users
+def log_punishment(local_user:User, target:User|Client):
+    identifier = target.username if isinstance(target, User) else target.ip
+    if target.punishment_status in (PunishmentType.BAN, PunishmentType.MUTE):
+        current_app.logger.info(
+            f"[IP {request.remote_addr}] {local_user.username} punished {identifier} "
+            f"with {target.punishment_status.value} until {target.punishment_expiration}, "
+            f"for reason '{target.punishment_reason}'"
+        )
+    elif target.punishment_status == PunishmentType.PERMABAN:
+        current_app.logger.info(
+            f"[IP {request.remote_addr}] {local_user.username} punished {identifier} "
+            f"with {target.punishment_status.value} for reason '{target.punishment_reason}' ")
+    else:
+        current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} pardoned {identifier}")
+
 # main admin dashboard - this is where you can see all users and server settings
 @admin.route(routes["admin_dashboard"])
 def dashboard():
@@ -61,6 +77,8 @@ def config():
             config.join_code = None
         config.allow_signup = 'allow_signup' in request.form
         config.approve_posts = 'approve_posts' in request.form
+        current_app.logger.info(
+            f"[IP {request.remote_addr}] {local_user.username} updated config to {config}")
         return redirect(routes["admin_dashboard"])
 
 # a table of all registered users on the site
@@ -121,6 +139,8 @@ def user_punishment(username):
         elif 'expiration' in request.form:
             search_user.punishment_expiration = datetime.datetime.strptime(request.form.get('expiration'), "%Y-%m-%dT%H:%M")
 
+        log_punishment(local_user, search_user)
+
         return redirect(search_user.url)
 
 # a menu to change user permissions level (member, moderator, or admin)
@@ -138,9 +158,11 @@ def user_change_role(username):
         return render_template("admin/users/role.html", user=local_user, routes=routes, search_user=search_user,
                                Role=Role)
     else:
-        # set user punishment
+        # set user role
         try:
             search_user.role = Role(request.form.get('role'))
+            current_app.logger.info(
+                f"[IP {request.remote_addr}] {local_user.username} promoted {search_user.username} to {search_user.role}")
         except ValueError:
             return render_template("admin/users/role.html", user=local_user, routes=routes, search_user=search_user,
                                    Role=Role)
@@ -162,6 +184,7 @@ def user_censor_bio(username):
         return render_template("admin/users/censor_bio.html", user=local_user, routes=routes, search_user=search_user)
     else:
         search_user.bio = "[CENSORED BY ADMIN]"
+        current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} censored the bio of {search_user.username}")
         return redirect(search_user.url)
 
 # an admin menu to confirm deleting a post
@@ -174,10 +197,11 @@ def post_delete(post_id):
     try:
         post = Post.read(connection, post_id)
     except NameError:
-        abort(404)
+        return abort(404)
     if request.method == "GET":
         return render_template("admin/posts/delete.html", user=local_user, routes=routes, post=post)
     else:
+        current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} deleted post {post_id}")
         post.delete()
         return redirect(routes["admin_dashboard"])
 
@@ -193,7 +217,7 @@ def post_approval(post_id):
         if post.approved:
             return redirect(post.url)
     except NameError:
-        abort(404)
+        return abort(404)
     if request.method == "GET":
         return render_template("admin/posts/approval.html", user=local_user, routes=routes, post=post)
     else:
@@ -201,8 +225,10 @@ def post_approval(post_id):
         if verdict == "approve":
             post.approved = True
             post.date_posted = datetime.datetime.now()
+            current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} approved post {post_id}")
             return redirect(post.url)
         else:
+            current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} denied post {post_id}")
             post.delete()
             return redirect(routes["admin_dashboard"])
 
@@ -217,11 +243,12 @@ def comment_delete(comment_id):
     try:
         comment = Comment.read(connection, comment_id)
     except NameError:
-        abort(404)
+        return abort(404)
     if request.method == "GET":
         return render_template("admin/comments/delete.html", user=local_user, routes=routes, comment=comment)
     else:
         post = Post.read(connection, comment.comment_page)
+        current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} deleted comment {comment.comment_id}")
         comment.delete()
         return redirect(post.url)
 
@@ -264,6 +291,8 @@ def client_punishment(ip):
                                    PunishmentType=PunishmentType)
         elif 'expiration' in request.form:
             client.punishment_expiration = datetime.datetime.strptime(request.form.get('expiration'), "%Y-%m-%dT%H:%M")
+
+        log_punishment(local_user, client)
 
         return redirect(routes["admin_dashboard"])
 
@@ -322,5 +351,6 @@ def session_delete(token_id):
         return render_template("admin/sessions/delete.html", user=local_user, routes=routes, token=token)
     else:
         search_user = token.user
+        current_app.logger.info(f"[IP {request.remote_addr}] logged out {token.user.username} on token {token_id}")
         token.delete()
         return redirect(search_user.url)

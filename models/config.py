@@ -32,6 +32,10 @@ class Config:
     # --- GETTERS AND SETTERS ----
     # Simple key-value getters and setters for the database
 
+    # prints the config, useful for logging
+    def __str__(self):
+        return f'(join_code={self.__join_code__}, allow_signup={self.__allow_signup__}, approve_posts={self.__approve_posts__})'
+
     def update_values(self):
         cursor = self.connection.cursor()
         cursor.execute("SELECT value FROM config WHERE key = 'version'")
