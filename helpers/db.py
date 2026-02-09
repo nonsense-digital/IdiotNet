@@ -12,7 +12,7 @@ def check_db_version():
     connection = get_db_connection()
 
     try:
-        config = Config(connection)
+        config = Config.get(connection)
         connection.close()
         if config.version != DB_VERSION:
             current_app.logger.fatal(f"Expected database version {DB_VERSION}, got {config.version} instead.")

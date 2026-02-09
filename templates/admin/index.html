@@ -6,6 +6,14 @@
     {% if user.role == "member" %}
         <p>Haha, nice try</p>
     {% else %}
+        {% if config.approve_posts %}
+            <h2>Unapproved Posts</h2>
+            <ol id="latest">
+                {% for post in posts %}
+                    <li><a href="{{ routes["admin_post_approval"].format(post.post_id) }}">{{ post.title }}</a></li>
+                {% endfor %}
+            </ol>
+        {% endif %}
         <h2>Users</h2>
              <ol id="latest">
                 {% for user in users %}

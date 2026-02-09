@@ -3,6 +3,7 @@
 {% block title %}IdiotNet | Punish User{% endblock %}
 {% block content %}
     <h1>Change Role for User "{{ search_user.username }}"</h1>
+    {% include 'admin/users/user-info.html' %}
     {% if user.role.value == 'admin' %}
     <form action="{{ request.url }}" id="punishment_form" method="post">
             <label for="role" id="role_label">Role: </label>

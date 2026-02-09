@@ -12,6 +12,7 @@ class SearchType(Enum):
     USER_LIKED_POSTS = 2
     QUERY = 3
     PUNISHED_ENTITIES = 4
+    UNAPPROVED_POSTS = 5
 
 '''    if search_user is None:
         posts = Post.latest(connection, count, offset*count, SortMethod.LATEST)
@@ -36,6 +37,8 @@ def search_posts(count:int, offset:int=0, search_user:User=None, search_type:Sea
             posts = search_user.liked_posts[offset * count:offset * count + count]
         case SearchType.QUERY:
             posts = Post.search(connection, query, count, offset * count)
+        case SearchType.UNAPPROVED_POSTS:
+            posts = Post.latest(connection, count, offset * count, SortMethod.LATEST, approved=False)
         case _:
             raise TypeError("Invalid search type")
     return posts

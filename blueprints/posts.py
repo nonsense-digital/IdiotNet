@@ -3,7 +3,7 @@ from helpers.auth import *
 from helpers.db import *
 from helpers.listings import paged_posts, SearchType
 from models.client import Client
-from models.permissions import PunishmentType
+from models.permissions import PunishmentType, Role
 from models.post import Post, check_empty
 from routes import routes, API
 from models.image import Image
@@ -61,7 +61,8 @@ def new_post():
                     return render_template("posts/new.html", routes=routes, user=local_user, error_message="Title cannot be blank", client=client)
                 elif check_empty(content):
                     return render_template("posts/new.html", routes=routes, user=local_user, error_message="Content cannot be blank", client=client)
-                staged_post = Post.publish(connection, title, content, local_user.user_id)
+                force_approve = (local_user.role != Role.MEMBER) # posts from moderators and admins don't need approval
+                staged_post = Post.publish(connection, title, content, local_user.user_id, force_approve=force_approve)
                 
                 # now that the post object exists, add the relevant info to each image
                 images = request.files.getlist('file')

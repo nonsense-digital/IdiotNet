@@ -1,14 +1,15 @@
 import datetime
 
+from flask import g
+
 from helpers.misc import nullPack
-from models.post import Post
 from routes import routes
 from models.permissions import Role, PunishmentType
-from models.auth_token import Token
 
 class Config:
     # --- CONSTRUCTORS ---
     # Gets a reference to the server's configuration
+    # or use the appcontext for efficiency
     def __init__(self, connection):
         # define fields
         self.connection = connection
@@ -20,6 +21,13 @@ class Config:
             self.update_values()
         except ValueError:
             raise ValueError("Invalid server configuration")
+
+    @staticmethod
+    def get(connection):
+        if 'config' in g:
+            return g.get('config')
+        else:
+            return Config(connection)
 
     # --- GETTERS AND SETTERS ----
     # Simple key-value getters and setters for the database

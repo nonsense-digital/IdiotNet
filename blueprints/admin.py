@@ -36,8 +36,11 @@ def dashboard():
     check_admin(local_user)
     users = search_users(10, search_type=SearchType.ALL)
     clients = search_clients(10, search_type=SearchType.ALL)
-    config = Config(connection)
-    return render_template("admin/index.html", user=local_user, routes=routes, users=users, clients=clients, config=config)
+    config = Config.get(connection)
+    posts = []
+    if config.approve_posts:
+        posts = search_posts(10, search_type=SearchType.UNAPPROVED_POSTS)
+    return render_template("admin/index.html", user=local_user, routes=routes, users=users, clients=clients, config=config, posts=posts)
 
 # configuration menu for join code, post approval, etc
 @admin.route(routes["admin_config"], methods=["GET", "POST"])
@@ -45,7 +48,7 @@ def config():
     connection = get_db_connection()
     local_user = get_authenticated_user(connection, request.cookies)
     check_admin(local_user, True)
-    config = Config(connection)
+    config = Config.get(connection)
     if request.method == "GET":
         return render_template("admin/config.html", routes=routes, user=local_user, config=config)
     else:
@@ -97,7 +100,10 @@ def user_punishment(username):
     local_user = get_authenticated_user(connection, request.cookies)
     check_admin(local_user)
 
-    search_user = User.read(connection, username)
+    try:
+        search_user = User.read(connection, username)
+    except NameError:
+        abort(404)
     if request.method == "GET":
         return render_template("admin/users/punish.html", user=local_user, routes=routes, search_user=search_user,
                                PunishmentType=PunishmentType)
@@ -124,7 +130,10 @@ def user_change_role(username):
     local_user = get_authenticated_user(connection, request.cookies)
     check_admin(local_user, True)
 
-    search_user = User.read(connection, username)
+    try:
+        search_user = User.read(connection, username)
+    except NameError:
+        abort(404)
     if request.method == "GET":
         return render_template("admin/users/role.html", user=local_user, routes=routes, search_user=search_user,
                                Role=Role)
@@ -145,7 +154,10 @@ def user_censor_bio(username):
     local_user = get_authenticated_user(connection, request.cookies)
     check_admin(local_user)
 
-    search_user = User.read(connection, username)
+    try:
+        search_user = User.read(connection, username)
+    except NameError:
+        abort(404)
     if request.method == "GET":
         return render_template("admin/users/censor_bio.html", user=local_user, routes=routes, search_user=search_user)
     else:
@@ -159,12 +171,41 @@ def post_delete(post_id):
     local_user = get_authenticated_user(connection, request.cookies)
     check_admin(local_user)
 
-    post = Post.read(connection, post_id)
+    try:
+        post = Post.read(connection, post_id)
+    except NameError:
+        abort(404)
     if request.method == "GET":
         return render_template("admin/posts/delete.html", user=local_user, routes=routes, post=post)
     else:
         post.delete()
         return redirect(routes["admin_dashboard"])
+
+# an admin menu to confirm deleting a post
+@admin.route(routes["admin_post_approval"].format("<int:post_id>"), methods=['GET', 'POST'])
+def post_approval(post_id):
+    connection = get_db_connection()
+    local_user = get_authenticated_user(connection, request.cookies)
+    check_admin(local_user)
+
+    try:
+        post = Post.read(connection, post_id)
+        if post.approved:
+            return redirect(post.url)
+    except NameError:
+        abort(404)
+    if request.method == "GET":
+        return render_template("admin/posts/approval.html", user=local_user, routes=routes, post=post)
+    else:
+        verdict = request.form.get('verdict')
+        if verdict == "approve":
+            post.approved = True
+            post.date_posted = datetime.datetime.now()
+            return redirect(post.url)
+        else:
+            post.delete()
+            return redirect(routes["admin_dashboard"])
+
 
 # an admin menu to confirm deleting a comment
 @admin.route(routes["admin_comment_delete"].format("<int:comment_id>"), methods=['GET', 'POST'])
@@ -173,7 +214,10 @@ def comment_delete(comment_id):
     local_user = get_authenticated_user(connection, request.cookies)
     check_admin(local_user)
 
-    comment = Comment.read(connection, comment_id)
+    try:
+        comment = Comment.read(connection, comment_id)
+    except NameError:
+        abort(404)
     if request.method == "GET":
         return render_template("admin/comments/delete.html", user=local_user, routes=routes, comment=comment)
     else:
@@ -249,7 +293,10 @@ def user_sessions(username):
     connection = get_db_connection()
     local_user = get_authenticated_user(connection, request.cookies)
     check_admin(local_user)
-    search_user = User.read(connection, username)
+    try:
+        search_user = User.read(connection, username)
+    except NameError:
+        abort(404)
 
     # pagination of client-sessions
     page = request.args.get('page')
@@ -267,7 +314,10 @@ def session_delete(token_id):
     connection = get_db_connection()
     local_user = get_authenticated_user(connection, request.cookies)
     check_admin(local_user)
-    token = Token.read(connection, token_id)
+    try:
+        token = Token.read(connection, token_id)
+    except NameError:
+        abort(404)
     if request.method == "GET":
         return render_template("admin/sessions/delete.html", user=local_user, routes=routes, token=token)
     else:

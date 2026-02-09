@@ -1,5 +1,6 @@
 import datetime
 
+from models.config import Config
 from routes import routes
 from models.comment import Comment
 from enum import Enum
@@ -49,15 +50,18 @@ class Post:
         self.__date_posted__ = None
         self.__date_modified__ = None
         self.__deleted = False
+        self.__approved__ = None
 
     # Creates a new post, adds it to the database, and returns the resulting post object
     @staticmethod
-    def publish(connection, title:str, content:str, author:int):
+    def publish(connection, title:str, content:str, author:int, force_approve=False):
         # insert a new post into the database
         date_posted = datetime.datetime.now()
         cursor = connection.cursor()
-        query = "INSERT INTO posts (title, content, author, date_posted) VALUES (%s, %s, %s, %s) RETURNING id"
-        data = (title, content, author, date_posted)
+        config = Config.get(connection)
+        approved = (not config.approve_posts) or force_approve
+        query = "INSERT INTO posts (title, content, author, date_posted, approved) VALUES (%s, %s, %s, %s, %s) RETURNING id"
+        data = (title, content, author, date_posted, approved)
         cursor.execute(query, data)
         connection.commit()
 
@@ -69,6 +73,7 @@ class Post:
         p.__content__ = content
         p.__author__ = UserRef(connection, author)
         p.__date_posted__ = date_posted
+        p.__approved__ = approved
         cursor.close()
         return p
 
@@ -87,17 +92,17 @@ class Post:
 
     # Gets a list of posts, sorted by age or by popularity
     @staticmethod
-    def latest(connection, count:int, offset:int=0, sort_by:SortMethod=SortMethod.LATEST):
+    def latest(connection, count:int, offset:int=0, sort_by:SortMethod=SortMethod.LATEST, approved=True):
         cursor = connection.cursor()
         if sort_by == SortMethod.LATEST:
-            query = "SELECT id FROM posts ORDER BY date_posted DESC OFFSET %s LIMIT %s"
+            query = "SELECT id FROM posts WHERE approved = %s ORDER BY date_posted DESC OFFSET %s LIMIT %s"
         elif sort_by == SortMethod.OLDEST:
-            query = "SELECT id FROM posts ORDER BY date_posted OFFSET %s LIMIT %s"
+            query = "SELECT id FROM posts WHERE approved = %s ORDER BY date_posted OFFSET %s LIMIT %s"
         elif sort_by == SortMethod.POPULAR:
             raise NotImplementedError("Sort by popularity not implemented.")
         else:
             raise ValueError("Sorting method not specified.")
-        cursor.execute(query, (offset, count))
+        cursor.execute(query, (approved, offset, count))
         data = cursor.fetchall()
         posts = []
         for record in data:
@@ -119,11 +124,6 @@ class Post:
             p = Post.read(connection, result[0])
             posts.append(p)
         return posts
-
-
-
-
-
 
     # --- GETTERS AND SETTERS ----
     # When a Post object's atomic properties (title, content, date posted, etc.) are called, a getter function retrieves them from its private field.
@@ -197,6 +197,19 @@ class Post:
 
     @property
     @not_deleted
+    def approved(self):
+        return self.__approved__
+
+    @approved.setter
+    @not_deleted
+    def approved(self, approved):
+        cursor = self.connection.cursor()
+        cursor.execute("UPDATE posts set approved = %s where id = %s", (approved, self.post_id))
+        self.__approved__ = approved
+        cursor.close()
+
+    @property
+    @not_deleted
     def url(self):
         return routes["post"].format(self.post_id)
 
@@ -212,6 +225,7 @@ class Post:
             self.__author__ = UserRef(self.connection, result[3])
             self.__date_posted__ = result[4]
             self.__date_modified__ = result[5]
+            self.__approved__ = result[7]
         except IndexError:
             raise NameError("Post not found")
 

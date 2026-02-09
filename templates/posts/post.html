@@ -1,33 +1,47 @@
 {% extends 'base.html' %}
 
-{% block title %}IdiotNet | {{ post.title }}{% endblock %}
+{% block title %}IdiotNet | {{ post.title if post.approved else 'Private Post' }}{% endblock %}
 {% block content %}
-    <h1>{{ post.title }}</h1>
-    <h2><a href="{{ post.author.url }}"> {{ post.author.username }}</a></h2>
-    <p class="small_info">Posted at {{ post.date_posted.strftime("%Y-%m-%d %H:%M") }}</p>
-    {% if post.date_modified %}
-        <p class="small_info">Edited at {{ post.date_modified.strftime("%Y-%m-%d %H:%M") }}</p>
-    {% endif %}
-    <h3><span id="like-count">{{ post.likes_count }}</span> Likes </h3>
-    {% if user %}
-        <button id="like" data-id="{{ post.post_id }}" data-like="{{ not user.is_liked(post.post_id) }}"></button><br/>
-        {% if user.user_id == post.author.user_id %}
-            <a href="{{ request.url + "\edit" }}">Edit Post...</a>
+    {% if ((not post.approved) and (post.author.user_id == user.user_id)) or post.approved or (user and user.role.value != 'member') %}
+        {% if not post.approved %}
+            <div id="error">
+                {% if (post.author.user_id == user.user_id) %}
+                    This post has not been approved, so only you can see it.
+                {% else %}
+                    This post needs to be approved. <br/>
+                    <a href="{{ routes["admin_post_approval"].format(post.post_id) }}">Approve/Deny...</a>
+                {% endif %}
+            </div>
         {% endif %}
-    {% endif %}
-    <div id="post-content">{{ post.content }}</div>
-    <div id="post-images">
-        {% for image in post.images %}
-            <img src="{{ routes['image'].format(image.image_id) }}">
-        {% endfor %}
-    </div>
-    {% include 'comments.html' %}
-    {% if (user) and (user.role.value != "member") %}
-        <div class="mod-menu">
-            <h2>{{ user.role.value.capitalize() }} Options</h2>
-            <ul>
-                <li><a href="{{ routes["admin_post_delete"].format(post.post_id) }}">Delete</a></li>
-            </ul>
+        <h1>{{ post.title }}</h1>
+        <h2><a href="{{ post.author.url }}"> {{ post.author.username }}</a></h2>
+        <p class="small_info">Posted at {{ post.date_posted.strftime("%Y-%m-%d %H:%M") }}</p>
+        {% if post.date_modified %}
+            <p class="small_info">Edited at {{ post.date_modified.strftime("%Y-%m-%d %H:%M") }}</p>
+        {% endif %}
+        <h3><span id="like-count">{{ post.likes_count }}</span> Likes </h3>
+        {% if user %}
+            <button id="like" data-id="{{ post.post_id }}" data-like="{{ not user.is_liked(post.post_id) }}"></button><br/>
+            {% if user.user_id == post.author.user_id %}
+                <a href="{{ request.url + "\edit" }}">Edit Post...</a>
+            {% endif %}
+        {% endif %}
+        <div id="post-content">{{ post.content }}</div>
+        <div id="post-images">
+            {% for image in post.images %}
+                <img src="{{ routes['image'].format(image.image_id) }}">
+            {% endfor %}
         </div>
+        {% include 'comments.html' %}
+        {% if (user) and (user.role.value != "member") %}
+            <div class="mod-menu">
+                <h2>{{ user.role.value.capitalize() }} Options</h2>
+                <ul>
+                    <li><a href="{{ routes["admin_post_delete"].format(post.post_id) }}">Delete</a></li>
+                </ul>
+            </div>
+        {% endif %}
+    {% else %}
+        <h1>This post is currently private.</h1>
     {% endif %}
 {% endblock %}

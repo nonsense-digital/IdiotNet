@@ -48,7 +48,8 @@ create table posts
     date_modified timestamp,
     ts_nostop     tsvector generated always as ((
         setweight(to_tsvector('english_nostop'::regconfig, COALESCE(title, ''::text)), 'A'::"char") ||
-        setweight(to_tsvector('english_nostop'::regconfig, COALESCE(content, ''::text)), 'B'::"char"))) stored
+        setweight(to_tsvector('english_nostop'::regconfig, COALESCE(content, ''::text)), 'B'::"char"))) stored,
+    approved      boolean default true
 );
 
 create index idx_posts_ts_nostop

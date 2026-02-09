@@ -38,4 +38,17 @@ $(document).ready(function() {
         });
         require_join_code_input.trigger("change");
     }
+
+    if($("#approve_form")){
+        let verdict_input = $("#verdict");
+        let submit_btn = $("#submit");
+        verdict_input.on( "change", function() {
+           if(verdict_input.val() === 'none' || verdict_input.val() === null){
+               submit_btn.prop("disabled", "disabled");
+           }else{
+               submit_btn.prop("disabled", "");
+           }
+        });
+        verdict_input.trigger("change");
+    }
 });
