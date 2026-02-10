@@ -205,7 +205,23 @@ def post_delete(post_id):
         post.delete()
         return redirect(routes["admin_dashboard"])
 
-# an admin menu to confirm deleting a post
+@admin.route(routes["admin_posts_pending"])
+def pending_posts():
+    connection = get_db_connection()
+    local_user = get_authenticated_user(connection, request.cookies)
+    check_admin(local_user)
+    page = request.args.get('page')
+    if not page:
+        page = 1
+    else:
+        page = int(page)
+    posts, is_last_page = paged_posts(page, search_type=SearchType.UNAPPROVED_POSTS)
+    return render_template('admin/posts/pending.html', routes=routes, user=local_user, posts=posts, is_last_page=is_last_page,
+                           page=page)
+
+# an admin menu to approve or deny a post that is pending approval
+# approving will make it public and bump it to the top of latest
+# denying will delete it
 @admin.route(routes["admin_post_approval"].format("<int:post_id>"), methods=['GET', 'POST'])
 def post_approval(post_id):
     connection = get_db_connection()
@@ -226,11 +242,11 @@ def post_approval(post_id):
             post.approved = True
             post.date_posted = datetime.datetime.now()
             current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} approved post {post_id}")
-            return redirect(post.url)
+            return redirect(routes["admin_posts_pending"])
         else:
             current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} denied post {post_id}")
             post.delete()
-            return redirect(routes["admin_dashboard"])
+            return redirect(routes["admin_posts_pending"])
 
 
 # an admin menu to confirm deleting a comment

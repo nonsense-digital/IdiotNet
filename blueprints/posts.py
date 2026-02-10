@@ -42,13 +42,15 @@ def new_post():
     local_user = get_authenticated_user(connection, request.cookies)
     post_images = []
     client = Client(connection, request.remote_addr)
+    config = Config.get(connection)
 
     if not local_user:
 
         return redirect(routes["login"])
     else:
         if request.method == 'GET':
-            return render_template("posts/new.html", routes=routes, user=local_user, client=client)
+            print(local_user.role.value == 'member')
+            return render_template("posts/new.html", routes=routes, user=local_user, client=client, config=config)
         else:
             # only allow posting if the user isn't muted
             if local_user.punishment_status != PunishmentType.MUTE and client.punishment_status != PunishmentType.MUTE:

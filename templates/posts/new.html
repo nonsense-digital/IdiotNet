@@ -14,6 +14,9 @@
             <label for="title">Title:</label><input name="title" type="text" id="title"><br>
             <textarea id="content" name="content" rows="5" cols="40" placeholder="Once upon a time..."></textarea><br/>
             <input type=file name=file multiple>
+            {% if config.approve_posts and (user.role.value == 'member') %}
+                <p>Note: Your post will not be public until manually approved.</p>
+            {% endif %}
             <input class="submit" type="submit" value="Submit">
         </form>
     {% else %}

@@ -13,6 +13,7 @@
                     <li><a href="{{ routes["admin_post_approval"].format(post.post_id) }}">{{ post.title }}</a></li>
                 {% endfor %}
             </ol>
+            <a href="{{ routes['admin_posts_pending'] }}">See More...</a>
         {% endif %}
         <h2>Users</h2>
              <ol id="latest">
