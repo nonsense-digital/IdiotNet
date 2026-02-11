@@ -7,6 +7,7 @@ from models.permissions import PunishmentType, Role
 from models.post import Post, check_empty
 from routes import routes, API
 from models.image import Image
+from helpers.limiter import limiter
 
 posts = Blueprint('posts', __name__, template_folder='../templates')
 
@@ -36,6 +37,7 @@ def latest():
     return render_template('posts/latest.html', routes=routes, user=local_user, posts=posts, is_last_page=is_last_page, page=page)
 
 # menu to create a new post with title, content, and images
+@limiter.limit('1 per second')
 @posts.route(routes["new_post"], methods=['GET', 'POST'])
 def new_post():
     connection = get_db_connection()
@@ -49,7 +51,6 @@ def new_post():
         return redirect(routes["login"])
     else:
         if request.method == 'GET':
-            print(local_user.role.value == 'member')
             return render_template("posts/new.html", routes=routes, user=local_user, client=client, config=config)
         else:
             # only allow posting if the user isn't muted

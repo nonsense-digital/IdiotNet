@@ -17,21 +17,10 @@ from blueprints.main import main
 from models.client import Client
 from models.permissions import PunishmentType
 from werkzeug.middleware.proxy_fix import ProxyFix
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+from helpers.limiter import limiter
 
 # Set up Flask app
 app = Flask(__name__)
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1) # thanks to https://sentry.io/answers/get-the-ip-address-of-a-visitor-in-flask/
-load_dotenv()
-
-# thanks to https://flask-limiter.readthedocs.io/en/stable/
-limiter = Limiter(
-    get_remote_address,
-    app=app,
-    default_limits=["20 per second"],
-    storage_uri="memory://",
-)
 
 # Configures logging for the Flask server
 # Code snippet from https://flask.palletsprojects.com/en/stable/logging/
@@ -69,10 +58,17 @@ dictConfig({
     }
 })
 
+# set up logger for security
+if os.getenv('PROXY_FIX') == 'true':
+    with app.app_context():
+        current_app.logger.info('Proxy fix is enabled')
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1) # thanks to https://sentry.io/answers/get-the-ip-address-of-a-visitor-in-flask/
+
+load_dotenv()
+limiter.init_app(app)
+
 # not thanks to my good friend Tristin Porter for the rate limit system (it slowed down the website)
 # https://github.com/nonsense-digital/IdiotNet/issues/1
-requests_log = {}
-temp_banned = []
 @app.before_request
 def before_request():
     # only track the client if it is requesting a non-static endpoint
