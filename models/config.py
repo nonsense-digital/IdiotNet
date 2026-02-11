@@ -17,8 +17,11 @@ class Config:
         self.__join_code__ = None
         self.__allow_signup__ = None
         self.__approve_posts__ = None
+        self.__support_email__ = None
+        self.__announcement_banner__ = None
         try:
             self.update_values()
+            g.config = self
         except ValueError:
             raise ValueError("Invalid server configuration")
 
@@ -32,9 +35,11 @@ class Config:
     # --- GETTERS AND SETTERS ----
     # Simple key-value getters and setters for the database
 
-    # prints the config, useful for logging
+    # string representation of the config, useful for logging
     def __str__(self):
-        return f'(join_code={self.__join_code__}, allow_signup={self.__allow_signup__}, approve_posts={self.__approve_posts__})'
+        return (f'(join_code={self.__join_code__}, allow_signup={self.__allow_signup__}, '
+                f'approve_posts={self.__approve_posts__}, support_email={self.support_email}, '
+                f'announcement_banner={self.announcement_banner})')
 
     def update_values(self):
         cursor = self.connection.cursor()
@@ -46,6 +51,10 @@ class Config:
         self.__allow_signup__ = nullPack(cursor.fetchone())
         cursor.execute("SELECT value FROM config WHERE key = 'approve_posts'")
         self.__approve_posts__ = nullPack(cursor.fetchone())
+        cursor.execute("SELECT value FROM config WHERE key = 'support_email'")
+        self.__support_email__ = nullPack(cursor.fetchone())
+        cursor.execute("SELECT value FROM config WHERE key = 'announcement_banner'")
+        self.__announcement_banner__ = nullPack(cursor.fetchone())
         cursor.close()
 
     @property
@@ -55,6 +64,14 @@ class Config:
     @property
     def join_code_required(self):
         return self.__join_code__ is not None
+
+    @property
+    def has_support_email(self):
+        return self.__support_email__ is not None
+
+    @property
+    def has_announcement_banner(self):
+        return self.__announcement_banner__ is not None
 
     @property
     def join_code(self):
@@ -87,3 +104,28 @@ class Config:
         cursor.execute("UPDATE config SET value = %s WHERE key = 'approve_posts'", (value,))
         self.connection.commit()
         cursor.close()
+        self.__approve_posts__ = value
+
+    @property
+    def support_email(self):
+        return self.__support_email__
+
+    @support_email.setter
+    def support_email(self, value):
+        cursor = self.connection.cursor()
+        cursor.execute("UPDATE config SET value = %s WHERE key = 'support_email'", (value,))
+        self.connection.commit()
+        cursor.close()
+        self.__support_email__ = value
+
+    @property
+    def announcement_banner(self):
+        return self.__announcement_banner__
+
+    @announcement_banner.setter
+    def announcement_banner(self, value):
+        cursor = self.connection.cursor()
+        cursor.execute("UPDATE config SET value = %s WHERE key = 'announcement_banner'", (value,))
+        self.connection.commit()
+        cursor.close()
+        self.__announcement_banner__ = value

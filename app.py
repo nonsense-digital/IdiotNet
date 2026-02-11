@@ -77,6 +77,7 @@ def before_request():
         connection = get_db_connection()
         local_user = get_authenticated_user(connection, request.cookies)
         client = Client(connection, request.remote_addr)
+        config = Config.get(connection)
 
         # don't do the ban message if the user is already on ban (we don't want an infinite loop)
         if request.endpoint != 'errors.banned_message' and request.endpoint != 'users.logout':

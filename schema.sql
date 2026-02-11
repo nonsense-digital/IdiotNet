@@ -100,6 +100,8 @@ INSERT INTO config VALUES ('version', '1.0');
 INSERT INTO config VALUES ('join-code', null);
 INSERT INTO config VALUES ('allow_signup', true);
 INSERT INTO config VALUES ('approve_posts', false);
+INSERT INTO public.config VALUES ('support_email', null);
+INSERT INTO public.config VALUES ('announcement_banner', null);
 
 create table clients
 (

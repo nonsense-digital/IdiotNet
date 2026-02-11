@@ -68,6 +68,8 @@ def config():
     if request.method == "GET":
         return render_template("admin/config.html", routes=routes, user=local_user, config=config)
     else:
+        # optional feature - join code
+        # only add to db if specified
         if 'require_join_code' in request.form:
             if 'join_code' in request.form:
                 config.join_code = request.form['join_code']
@@ -75,8 +77,32 @@ def config():
                 config.join_code = None
         else:
             config.join_code = None
+
+        # simple checkboxes
         config.allow_signup = 'allow_signup' in request.form
         config.approve_posts = 'approve_posts' in request.form
+
+        # optional feature - support email
+        # only add to db if specified
+        if 'require_support_email' in request.form:
+            if 'support_email' in request.form:
+                config.support_email = request.form['support_email']
+            else:
+                config.support_email = None
+        else:
+            config.support_email = None
+
+        # optional feature - announcement banner
+        # only add to db if specified
+        if 'require_announcement_banner' in request.form:
+            if 'announcement_banner' in request.form:
+                config.announcement_banner = request.form['announcement_banner']
+            else:
+                config.announcement_banner = None
+        else:
+            config.announcement_banner = None
+
+        # log the changes
         current_app.logger.info(
             f"[IP {request.remote_addr}] {local_user.username} updated config to {config}")
         return redirect(routes["admin_dashboard"])

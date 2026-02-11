@@ -17,4 +17,8 @@
         <li>No AI Slop</li>
         <li>No fimpla!!!</li>
     </ol>
+    {% if g.config.has_support_email %}
+        <h2>Support</h2>
+        <p>For inquiries about the website, please contact {{ g.config.support_email }}</p>
+    {% endif %}
 {% endblock %}

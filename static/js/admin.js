@@ -27,16 +27,19 @@ $(document).ready(function() {
     }
 
     if($("#config_form")){
-        let require_join_code_input = $("#require_join_code");
-        let join_code_input = $("#join_code");
-        require_join_code_input.on( "change", function() {
-            if(require_join_code_input.is(':checked')){
-                join_code_input.prop("disabled", "");
-            }else{
-                join_code_input.prop("disabled", "disabled");
-            }
+        $(".optional_config").each(function(index, element){
+            let name = $(element).attr("id");
+            let require_input = $("#require_" + name);
+            let input = $("#" + name);
+            require_input.on( "change", function() {
+                if(require_input.is(':checked')){
+                    input.prop("disabled", "");
+                }else{
+                    input.prop("disabled", "disabled");
+                }
+            });
+            require_input.trigger("change");
         });
-        require_join_code_input.trigger("change");
     }
 
     if($("#approve_form")){
