@@ -5,7 +5,7 @@
     <h1>Edit User Bio</h1>
     {% if user.punishment_status.value != "mute" and client.punishment_status.value != "mute" %}
         <form action="{{ request.url }}" method="POST">
-            <textarea id="content" name="content" rows="5" cols="40" placeholder="I am a total loser...">{{ user.bio }}</textarea><br/>
+            <textarea id="content" name="content" rows="5" cols="40" placeholder="I am a total loser..." maxlength="800">{{ user.bio }}</textarea><br/>
             <input type="submit" value="Submit">
         </form>
     {% else %}

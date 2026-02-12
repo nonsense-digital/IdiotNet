@@ -29,7 +29,7 @@
 
         </ul>
         <form method="get" class="searchbox" action="{{ routes["search"] }}">
-            <label for="query">Search:</label> <input type="text" id="query" name="query" value="{{query}}" />
+            <label for="query">Search:</label> <input type="text" id="query" name="query" value="{{query}}" maxlength="50" />
             <input type="submit" value="Search" />
         </form>
 
