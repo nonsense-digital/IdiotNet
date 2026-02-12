@@ -140,6 +140,9 @@ def signup():
             password = request.form.get('password')
             verify_password = request.form.get('verify_password')
 
+            if not Config.get(connection).allow_signup:
+                return render_template("users/signup.html", routes=routes, user=local_user, error_message=None)
+
             user_error = check_username(username)
             if user_error is not None:
                 current_app.logger.warning(f"[IP {request.remote_addr}] Failed to create account: {user_error}")

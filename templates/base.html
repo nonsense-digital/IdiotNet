@@ -24,7 +24,9 @@
             <li><a href="{{ routes['logout'] }}">Logout</a></li>
         {% else %}
             <li><a href="{{ routes['login'] }}">Login</a></li>
-            <li><a href="{{ routes['signup'] }}">Signup</a></li>
+            {% if g.config.allow_signup %}
+                <li><a href="{{ routes['signup'] }}">Signup</a></li>
+            {% endif %}
         {% endif %}
 
         </ul>
