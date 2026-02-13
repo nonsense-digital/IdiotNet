@@ -30,17 +30,22 @@ def check_admin(local_user:User, admin_only=False):
 
 # logic to log punishments for IPs and users
 def log_punishment(local_user:User, target:User|Client):
+    # determine which kind of logging to used, based on if it's an IP or a user
     identifier = target.username if isinstance(target, User) else target.ip
+
+    # for punishments with expiration
     if target.punishment_status in (PunishmentType.BAN, PunishmentType.MUTE):
         current_app.logger.info(
             f"[IP {request.remote_addr}] {local_user.username} punished {identifier} "
             f"with {target.punishment_status.value} until {target.punishment_expiration}, "
             f"for reason '{target.punishment_reason}'"
         )
+    # for punishments without expiration
     elif target.punishment_status == PunishmentType.PERMABAN:
         current_app.logger.info(
             f"[IP {request.remote_addr}] {local_user.username} punished {identifier} "
             f"with {target.punishment_status.value} for reason '{target.punishment_reason}' ")
+    # for pardons (removing punishments)
     else:
         current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} pardoned {identifier}")
 
@@ -144,23 +149,27 @@ def user_punishment(username):
     local_user = get_authenticated_user(connection, request.cookies)
     check_admin(local_user)
 
+    # make sure the users exists
     try:
         search_user = User.read(connection, username)
     except NameError:
         abort(404)
+
     if request.method == "GET":
+        # confirmation/customization dialog
         return render_template("admin/users/punish.html", user=local_user, routes=routes, search_user=search_user,
                                PunishmentType=PunishmentType)
     else:
-        # set user punishment
+        # get user punishment
         try:
             search_user.punishment_status = PunishmentType(request.form.get('punishment'))
         except ValueError:
             return render_template("admin/users/punish.html", user=local_user, routes=routes, search_user=search_user,
                                    PunishmentType=PunishmentType)
 
+        # get user reason
         search_user.punishment_reason = request.form.get('reason')
-        if  search_user.punishment_status == PunishmentType.PERMABAN:
+        if  search_user.punishment_status == PunishmentType.PERMABAN: #delete all data from user for permaban
             search_user.clear_data()
         elif 'expiration' in request.form:
             search_user.punishment_expiration = datetime.datetime.strptime(request.form.get('expiration'), "%Y-%m-%dT%H:%M")
@@ -176,11 +185,14 @@ def user_change_role(username):
     local_user = get_authenticated_user(connection, request.cookies)
     check_admin(local_user, True)
 
+    # check if user exists
     try:
         search_user = User.read(connection, username)
     except NameError:
         abort(404)
+
     if request.method == "GET":
+        # confirmation dialog
         return render_template("admin/users/role.html", user=local_user, routes=routes, search_user=search_user,
                                Role=Role)
     else:
@@ -202,13 +214,17 @@ def user_censor_bio(username):
     local_user = get_authenticated_user(connection, request.cookies)
     check_admin(local_user)
 
+    # check if user exists
     try:
         search_user = User.read(connection, username)
     except NameError:
         abort(404)
+
     if request.method == "GET":
+        # confirmation dialog
         return render_template("admin/users/censor_bio.html", user=local_user, routes=routes, search_user=search_user)
     else:
+        # replace with censor message
         search_user.bio = "[CENSORED BY ADMIN]"
         current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} censored the bio of {search_user.username}")
         return redirect(search_user.url)
@@ -220,17 +236,23 @@ def post_delete(post_id):
     local_user = get_authenticated_user(connection, request.cookies)
     check_admin(local_user)
 
+    # check if post exists
     try:
         post = Post.read(connection, post_id)
     except NameError:
         return abort(404)
+
     if request.method == "GET":
+        # confirmation dialog
         return render_template("admin/posts/delete.html", user=local_user, routes=routes, post=post)
     else:
+        # delete post
         current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} deleted post {post_id}")
         post.delete()
         return redirect(routes["admin_dashboard"])
 
+# if the "post approval" setting is enabled
+# returns a list of posts that need approval from moderators
 @admin.route(routes["admin_posts_pending"])
 def pending_posts():
     connection = get_db_connection()
@@ -254,22 +276,27 @@ def post_approval(post_id):
     local_user = get_authenticated_user(connection, request.cookies)
     check_admin(local_user)
 
+    # check if the post doesn't exist or already has been approved/denied
     try:
         post = Post.read(connection, post_id)
         if post.approved:
             return redirect(post.url)
     except NameError:
         return abort(404)
+
     if request.method == "GET":
+        # confirmation dialog
         return render_template("admin/posts/approval.html", user=local_user, routes=routes, post=post)
     else:
         verdict = request.form.get('verdict')
         if verdict == "approve":
+            # if approved, push the post to the top of the 'latest posts' list and make it public
             post.approved = True
             post.date_posted = datetime.datetime.now()
             current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} approved post {post_id}")
             return redirect(routes["admin_posts_pending"])
         else:
+            # if denied, delete the post
             current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} denied post {post_id}")
             post.delete()
             return redirect(routes["admin_posts_pending"])
@@ -282,13 +309,17 @@ def comment_delete(comment_id):
     local_user = get_authenticated_user(connection, request.cookies)
     check_admin(local_user)
 
+    # make sure the comment exists
     try:
         comment = Comment.read(connection, comment_id)
     except NameError:
         return abort(404)
+
     if request.method == "GET":
+        # confirmation dialog
         return render_template("admin/comments/delete.html", user=local_user, routes=routes, comment=comment)
     else:
+        # delete the comment
         post = Post.read(connection, comment.comment_page)
         current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} deleted comment {comment.comment_id}")
         comment.delete()
@@ -318,20 +349,21 @@ def client_punishment(ip):
 
     client = Client(connection, ip)
     if request.method == "GET":
+        # confirmation/customization dialog
         return render_template("admin/clients/punish.html", user=local_user, routes=routes, client=client, PunishmentType=PunishmentType)
     else:
-        # set user punishment
+        # get user punishment
         try:
             client.punishment_status = PunishmentType(request.form.get('punishment'))
         except ValueError:
             return render_template("admin/clients/punish.html", user=local_user, routes=routes, client=client,
                                    PunishmentType=PunishmentType)
-
+        # get punishment reason
         client.punishment_reason = request.form.get('reason')
         if client.punishment_status == PunishmentType.PERMABAN: # you can't permaban a client.....
             return render_template("admin/clients/punish.html", user=local_user, routes=routes, client=client,
                                    PunishmentType=PunishmentType)
-        elif 'expiration' in request.form:
+        elif 'expiration' in request.form: # permabans don't need expiration (they are PERMANENT!)
             client.punishment_expiration = datetime.datetime.strptime(request.form.get('expiration'), "%Y-%m-%dT%H:%M")
 
         log_punishment(local_user, client)
@@ -385,13 +417,18 @@ def session_delete(token_id):
     connection = get_db_connection()
     local_user = get_authenticated_user(connection, request.cookies)
     check_admin(local_user)
+
+    # make sure the token exists
     try:
         token = Token.read(connection, token_id)
     except NameError:
         abort(404)
+
     if request.method == "GET":
+        # confirmation dialog
         return render_template("admin/sessions/delete.html", user=local_user, routes=routes, token=token)
     else:
+        # delete the token / log out the user
         search_user = token.user
         current_app.logger.info(f"[IP {request.remote_addr}] logged out {token.user.username} on token {token_id}")
         token.delete()

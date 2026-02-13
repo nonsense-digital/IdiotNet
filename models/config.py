@@ -25,6 +25,8 @@ class Config:
         except ValueError:
             raise ValueError("Invalid server configuration")
 
+    # we only need one instance of this model because there is only one configuration
+    # so we can store it in the appcontext
     @staticmethod
     def get(connection):
         if 'config' in g:
