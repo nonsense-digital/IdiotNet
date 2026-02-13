@@ -4,10 +4,10 @@
 {% block content %}
     <h1>Change Server Configuration</h1>
     <form action="{{ request.url }}" id="config_form" method="post">
-        <label for="require_join_code" >Require Join Code: </label>
+        <label for="require_join_code">Require Join Code: </label>
                 <input id="require_join_code" name="require_join_code" type="checkbox" {% if config.join_code_required %}checked{% endif %}><br/>
             <label for="join_code">Join Code: </label>
-                <input class="optional_config" id="join_code" name="join_code" type="text" {% if not config.join_code_required %}disabled{% endif %}
+                <input maxlength="15" class="optional_config" id="join_code" name="join_code" type="text" {% if not config.join_code_required %}disabled{% endif %}
                     value="{{ config.join_code if config.join_code_required else '' }}"><br/>
         <label for="allow_signup" >Signup Allowed: </label>
             <input id="allow_signup" name="allow_signup" type="checkbox" {% if config.allow_signup %}checked{% endif %}><br/>

@@ -128,6 +128,7 @@ def user_edit(username):
 def signup():
     connection = get_db_connection()
     local_user = get_authenticated_user(connection, request.cookies)
+    config = Config.get(connection)
 
     if local_user:
         return redirect(routes["home"])
@@ -140,8 +141,17 @@ def signup():
             password = request.form.get('password')
             verify_password = request.form.get('verify_password')
 
-            if not Config.get(connection).allow_signup:
+            # disabled signup
+            if not config.allow_signup:
                 return render_template("users/signup.html", routes=routes, user=local_user, error_message=None)
+
+            # join code check
+            if config.join_code_required:
+                if 'join_code' in request.form:
+                    if request.form.get('join_code') != config.join_code:
+                        return render_template("users/signup.html", routes=routes, user=local_user, error_message='Incorrect join code.')
+                else:
+                    return render_template("users/signup.html", routes=routes, user=local_user, form_data=request.form,)
 
             user_error = check_username(username)
             if user_error is not None:
