@@ -131,6 +131,7 @@ INSERT INTO config VALUES ('approve_posts', false);
 INSERT INTO config VALUES ('support_email', null);
 INSERT INTO config VALUES ('announcement_banner', null);
 INSERT INTO config VALUES ('require_email', false);
+INSERT INTO config VALUES ('require_email_verification', false);
 
 -- CLIENTS
 -- Keeps track of previously connected IP addresses
