@@ -1,0 +1,20 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<!- Thanks to https://www.mailgun.com/blog/email/transactional-html-email-templates/ for email base ->
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+    <head>
+        <meta name="viewport" content="width=device-width" />
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>Verify Your Email</title>
+    </head>
+
+    <body itemscope itemtype="http://schema.org/EmailMessage" >
+        <p>Hello, {{ user.username }}</p><br/>
+        <p>Thank you for joining IdiotNet! Before you can start using the website, you must
+            <a href="{{ server_addr + routes["verify_email"].format(verify.verify_id)  }}">
+                verify your email.</a> This link will remain valid for one week.</p><br/>
+        <p>Thanks, </p><br/>
+        <p>The IdiotNet Team</p>
+    </body>
+</html>

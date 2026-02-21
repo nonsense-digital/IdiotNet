@@ -19,6 +19,7 @@ class Config:
         self.__approve_posts__ = None
         self.__support_email__ = None
         self.__announcement_banner__ = None
+        self.__require_email__ = None
         try:
             self.update_values()
             g.config = self

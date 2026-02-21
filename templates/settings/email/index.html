@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}IdiotNet | Change Your Email{% endblock %}
+{% block content %}
+    <h1>Change your Email</h1>
+    {% if error_message %}
+        <div id="error">
+            <h3>Error</h3>
+            <p>{{ error_message }}</p>
+        </div>
+    {% endif %}
+    <p>Your current email is {{ user.email }}</p>
+    <form action="{{ routes["change_email"] }}" method="POST">
+        <label for="email">Email:</label><input name="email" type="email" id="email" maxlength="50"><br>
+        <label for="verify_email">Verify Email:</label><input name="verify_email" type="email" id="verify_email" maxlength="50"><br>
+        <input type="submit" class="submit" value="Submit">
+    </form>
+{% endblock %}

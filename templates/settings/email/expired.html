@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}IdiotNet | Verification Expired{% endblock %}
+{% block content %}
+    <h1>Your verification has expired</h1>
+    <p>Your email verification has expired.</p><br/>
+    {% if first_time %}
+        <!- You cannot log in to a newly created account if it hasn't been verified ->
+        <a href="{{ routes['switch'] }}">Log in to send a new verification...</a>
+    {% else %}
+        {% if user.user_id == search_user.user_id %}
+            <a href="{{ routes['change_email'] }}">Send a new verification</a>
+        {% else %}
+            <a href="{{ routes['switch'] }}">Log in to send a new verification...</a>
+        {% endif %}
+    {% endif %}
+{% endblock %}

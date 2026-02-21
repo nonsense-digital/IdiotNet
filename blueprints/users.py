@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, abort, request, redirect, make_response
 from helpers.auth import *
 from helpers.db import *
+from helpers.limiter import limiter
 from helpers.listings import paged_posts, SearchType, search_posts
 from models.client import Client
 from models.permissions import PunishmentType
@@ -68,6 +69,7 @@ def user_liked_posts(username):
 
 # login menu, using password hashing and auth tokens for secure authentication
 @users.route(routes["login"], methods=['GET', 'POST'])
+@limiter.limit('10 per minute')
 def login():
     connection = get_db_connection()
     local_user = get_authenticated_user(connection, request.cookies)
@@ -125,6 +127,7 @@ def user_edit(username):
 
 # create your idiotnet account, using password hashing and auth tokens
 @users.route(routes["signup"], methods=['GET', 'POST'])
+@limiter.limit('5 per minute')
 def signup():
     connection = get_db_connection()
     local_user = get_authenticated_user(connection, request.cookies)
@@ -194,3 +197,18 @@ def logout():
         current_app.logger.info(
             f"[IP {request.remote_addr}] {local_user.username} logged out")
         return redirect(routes["home"])
+
+# log out and then redirect to login page to switch accounts
+@users.route(routes["switch"])
+def switch():
+    connection = get_db_connection()
+    local_user, token = get_authenticated_user_and_token(connection, request.cookies)
+
+    # log out if logged in
+    if local_user:
+        token.delete()
+        current_app.logger.info(
+            f"[IP {request.remote_addr}] {local_user.username} logged out")
+
+    # redirect to log in
+    return redirect(routes["login"])

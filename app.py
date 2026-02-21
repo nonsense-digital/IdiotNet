@@ -72,7 +72,7 @@ limiter.init_app(app)
 @app.before_request
 def before_request():
     # only track the client if it is requesting a non-static endpoint
-    if request.endpoint and request.endpoint != 'static' and request.endpoint != 'post.images':
+    if request.endpoint != 'static' and request.endpoint != 'post.images':
         # get user, db, client info
         connection = get_db_connection()
         local_user = get_authenticated_user(connection, request.cookies)

@@ -16,6 +16,7 @@
         {% if user.username == search_user.username %}
             <a href="{{ request.url + "\edit" }}">Edit...</a>
             <a href="{{ routes["change_password"] }}">Change Password...</a>
+            <a href="{{ routes["change_email"] }}">Change Email...</a>
         {% endif %}
 
         <h2>Latest Posts</h2>
