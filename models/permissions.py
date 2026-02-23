@@ -14,9 +14,16 @@ class PunishmentType(Enum):
     PERMABAN = "permaban"
 
 class Role(str, Enum):
+    # unverified, can't do anything
+    UNVERIFIED = "unverified"
     # base role, can post, comment, follow, like, etc
     MEMBER = 'member'
     # higher role, can manage punishments, censor content, and track user IP addresses
     MODERATOR = 'moderator'
     # highest role, can change server configuration and promote users (dangerous)
     ADMIN = 'admin'
+
+    # get an integer that represents the permission level
+    @property
+    def level(self):
+        return list(self.__class__).index(self)
