@@ -6,7 +6,7 @@
     {% if user.role == "member" %}
         <p>Haha, nice try</p>
     {% else %}
-        {% if config.approve_posts %}
+        {% if config.approve_posts or posts|length > 0 %}
             <h2>Unapproved Posts</h2>
             <ol id="latest">
                 {% for post in posts %}

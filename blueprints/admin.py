@@ -59,8 +59,7 @@ def dashboard():
     clients = search_clients(10, search_type=SearchType.ALL)
     config = Config.get(connection)
     posts = []
-    if config.approve_posts:
-        posts = search_posts(10, search_type=SearchType.UNAPPROVED_POSTS)
+    posts = search_posts(10, search_type=SearchType.UNAPPROVED_POSTS)
     return render_template("admin/index.html", user=local_user, routes=routes, users=users, clients=clients, config=config, posts=posts)
 
 # configuration menu for join code, post approval, etc

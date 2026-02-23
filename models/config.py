@@ -1,5 +1,4 @@
 import datetime
-
 from flask import g
 
 from helpers.misc import nullPack
@@ -65,7 +64,11 @@ class Config:
             return super().__getattribute__(key)
 
         if key != 'connection' and key != '__config__' and key in self.__config__.keys():
-            return self.__config__[key]
+            data = self.__config__[key]
+            if data not in ('true', 'false'):
+                return data
+            else:
+                return data == 'true'
         else:
             return super().__getattribute__(key)
 
@@ -81,5 +84,6 @@ class Config:
             self.connection.commit()
             cursor.close()
             self.__config__[key] = value
+
         else:
             super().__setattr__(key, value)

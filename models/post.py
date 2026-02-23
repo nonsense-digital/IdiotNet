@@ -92,7 +92,7 @@ class Post:
 
     # Gets a list of posts, sorted by age or by popularity
     @staticmethod
-    def latest(connection, count:int, offset:int=0, sort_by:SortMethod=SortMethod.LATEST, approved=True):
+    def latest(connection, count:int, offset:int=0, sort_by:SortMethod=SortMethod.LATEST, approved=True, all_posts=False):
         cursor = connection.cursor()
         if sort_by == SortMethod.LATEST:
             query = "SELECT id FROM posts WHERE approved = %s ORDER BY date_posted DESC OFFSET %s LIMIT %s"
