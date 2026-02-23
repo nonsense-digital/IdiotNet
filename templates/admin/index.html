@@ -36,6 +36,8 @@
         <span id="property">Require Post Approval: </span> <span>{{ config.approve_posts }}</span><br/>
         <span id="property">Support Email: </span><span>{{ config.support_email if config.has_support_email else '[NOT ENABLED]' }}</span><br/>
         <span id="property">Announcement Banner: </span><span>{{ config.announcement_banner if config.has_announcement_banner else '[NOT ENABLED]' }}</span><br/>
+        <span id="property">Require User Emails: </span><span>{{ config.require_email }}</span><br/>
+        <span id="property">Require User Email Verification: </span><span>{{ config.require_email_verification }}</span><br/>
 
         {% if user.role.value == 'admin' %}
             <a href="{{ routes["admin_config"] }}">Change Configuration...</a>

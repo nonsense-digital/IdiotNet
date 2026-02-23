@@ -85,6 +85,8 @@ def config():
         # simple checkboxes
         config.allow_signup = 'allow_signup' in request.form
         config.approve_posts = 'approve_posts' in request.form
+        config.require_email = 'require_email' in request.form
+        config.require_email_verification = 'require_email_verification' in request.form
 
         # optional feature - support email
         # only add to db if specified

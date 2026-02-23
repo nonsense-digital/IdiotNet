@@ -23,6 +23,11 @@
             <label for="announcement_banner">Announcement Banner: </label>
                 <input class="optional_config" id="announcement_banner" name="announcement_banner" type="text" {% if not config.has_announcement_banner %}disabled{% endif %}
                     value="{{ config.announcement_banner if config.has_announcement_banner else '' }}"><br/>
+        <label for="require_email">Require email:</label>
+            <input id="require_email" name="require_email" type="checkbox" {% if config.require_email %}checked{% endif %}><br/>
+        <label for="require_email_verification">Require email verification: </label>
+            <input id="require_email_verification" name="require_email_verification" type="checkbox"
+                   {% if not config.require_email %}disabled{% endif %} {% if config.require_email_verification %}checked{% endif %}><br/>
         <input id="submit" name="submit" type="submit" value="Submit">
     </form>
 {% endblock %}

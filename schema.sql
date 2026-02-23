@@ -114,7 +114,7 @@ INSERT INTO users (username, email, date_created, password_hash, role) VALUES
 -- Key-value settings for various server-wide functions
 create table config
 (
-    key   varchar(20) not null
+    key   varchar(30) not null
         constraint config_pk
             primary key,
     value varchar(255)
