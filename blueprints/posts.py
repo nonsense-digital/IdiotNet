@@ -54,7 +54,7 @@ def new_post():
             return render_template("posts/new.html", routes=routes, user=local_user, client=client, config=config)
         else:
             # only allow posting if the user isn't muted
-            if local_user.punishment_status != PunishmentType.MUTE and client.punishment_status != PunishmentType.MUTE:
+            if local_user and  local_user.punishment_status != PunishmentType.MUTE and client.punishment_status != PunishmentType.MUTE:
                 # get text info from POST request
                 title = request.form.get('title')
                 content = request.form.get('content')
@@ -102,7 +102,7 @@ def edit_post(post_id):
     else:
         read_post = Post.read(connection, post_id)
 
-        if read_post.author.user_id == local_user.user_id:
+        if local_user and read_post.author.user_id == local_user.user_id:
             if request.method == 'GET':
                 return render_template("posts/edit.html", routes=routes, user=local_user, post=read_post, client=client)
             else:

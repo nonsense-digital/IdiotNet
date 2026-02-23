@@ -12,7 +12,7 @@
         <tr>
             <td>
                 {% if user_view %}
-                    <a href="{{ routes["admin_client_sessions"].format(token.client_ip) }}"></a>
+                    <a href="{{ routes["admin_client_sessions"].format(token.client_ip) }}">{{ token.client_ip }}</a>
                 {% else %}
                     <a href="{{ token.user.url }}">{{ token.user.username }}</a>
                 {% endif %}

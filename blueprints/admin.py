@@ -408,7 +408,7 @@ def user_sessions(username):
         page = int(page)
     sessions, is_last_page = paged_sessions(page, search_user=search_user)
     return render_template('admin/users/sessions.html', routes=routes, user=local_user,
-                           sessions=sessions, is_last_page=is_last_page, page=page, search_user=search_user, user_view=False)
+                           sessions=sessions, is_last_page=is_last_page, page=page, search_user=search_user, user_view=True)
 
 # menu to delete an auth token, logging out a user
 @admin.route(routes["admin_session_delete"].format("<token_id>"), methods=["GET", "POST"])

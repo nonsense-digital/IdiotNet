@@ -78,7 +78,7 @@ def comment_post(post_id):
     connection = get_db_connection()
     local_user = get_authenticated_user(connection, request.cookies)
     try:
-        if local_user.punishment_status != PunishmentType.MUTE:
+        if local_user and local_user.punishment_status != PunishmentType.MUTE:
             content = request.form.get("content")
             comment = Comment.publish(connection, content, local_user.user_id, post_id)
             current_app.logger.info(
@@ -97,7 +97,7 @@ def reply_comment(root_comment_id):
     try:
         content = request.form.get("content")
         root_comment = Comment.read(connection, root_comment_id)
-        if local_user.punishment_status != PunishmentType.MUTE and client.punishment_status != PunishmentType.MUTE:
+        if local_user and local_user.punishment_status != PunishmentType.MUTE and client.punishment_status != PunishmentType.MUTE:
             comment = Comment.publish(connection, content, local_user.user_id, root_comment.comment_page, root_comment=root_comment_id)
             current_app.logger.info(
                 f"[IP {request.remote_addr}] {local_user.username} created comment {comment.comment_id} as a reply to {root_comment_id}")

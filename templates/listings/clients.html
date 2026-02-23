@@ -1,9 +1,8 @@
 <table id="latest-table">
-    <tr><th>IP</th><th>Last Accessed</th><th>Sessions</th><th>Punishment</th><th>Punishment Expiration</th><th>Punishment Reason</th></tr>
+    <tr><th>IP</th><th>Sessions</th><th>Punishment</th><th>Punishment Expiration</th><th>Punishment Reason</th></tr>
     {% for client in clients %}
         <tr>
             <td><a href="{{ routes["admin_client_punish"].format(client.ip) }}" >{{ client.ip }}</a></td>
-            <td>{{ client.last_accessed.strftime("%Y-%m-%d %H:%M:%S.%f") }}</td>
             <td><a href="{{ routes["admin_client_sessions"].format(client.ip) }}">{{ client.token_ids|length }} Sessions</a></td>
             <td> {{ client.punishment_status.value.capitalize() }} </td>
             <td>
