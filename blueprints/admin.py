@@ -1,8 +1,11 @@
 from flask import Blueprint, render_template, abort, request, redirect, make_response
+
+from helpers import mailer
 from helpers.auth import *
 from helpers.db import *
 from helpers.listings import paged_posts, SearchType, search_posts, paged_clients, search_users, search_clients, \
     paged_users, paged_sessions
+from helpers.mailer import EmailType
 from models.client import Client
 from models.comment import Comment
 from models.config import Config
@@ -175,6 +178,8 @@ def user_punishment(username):
         elif 'expiration' in request.form:
             search_user.punishment_expiration = datetime.datetime.strptime(request.form.get('expiration'), "%Y-%m-%dT%H:%M")
 
+        # send punishment email & log it
+        mailer.send_email(search_user, EmailType.PUNISHMENT)
         log_punishment(local_user, search_user)
 
         return redirect(search_user.url)

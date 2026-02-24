@@ -1,0 +1,30 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<!- Thanks to https://www.mailgun.com/blog/email/transactional-html-email-templates/ for email base ->
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+    <head>
+        <meta name="viewport" content="width=device-width" />
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>Important IdiotNet Notice</title>
+    </head>
+
+    <body itemscope itemtype="http://schema.org/EmailMessage" >
+        <p>Hello, {{ user.username }}</p><br/>
+        {% if user.punishment_status != 'none' %}
+            <p>Due to a recent rule violation, you have received a {{ user.punishment_status.value.capitalize() }}.</p><br/>
+            <p>Reason: {{ user.punishment_reason }}</p>
+            <p>
+                {% if user.punishment_status != 'permaban' %}
+                    Lasts until: {{ user.punishment_expiration }}
+                {% else %}
+                    This punishment is permanent and irreversible. All content and data has been deleted from your profile.
+                {% endif %}
+            </p>
+        {% else %}
+            <p>Good news! You have been pardoned from your punishment! Your full usage of IdiotNet has been restored!</p>
+        {% endif %}
+        <p>Thanks, </p><br/>
+        <p>The IdiotNet Team</p>
+    </body>
+</html>

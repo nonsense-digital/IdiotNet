@@ -66,7 +66,7 @@ def get_template(server_addr:str, recipient:User, email_type:EmailType, verify=N
     current_file = Path(__file__).resolve() # get current file
     template_dir = current_file.parent.parent / "templates" / "email" # get template directory
     env = Environment(loader=FileSystemLoader(str(template_dir))) # get jinja env
-    template = env.get_template('verify_change_email.html')
+    template = env.get_template(f'{email_type.value}.html')
 
     # format with inputs and return
     content = template.render(user=recipient, email_type=email_type, verify=verify, routes=routes,
