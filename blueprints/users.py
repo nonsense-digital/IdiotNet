@@ -1,12 +1,16 @@
 from flask import Blueprint, render_template, abort, request, redirect, make_response
+
+from helpers import mailer
 from helpers.auth import *
 from helpers.db import *
 from helpers.limiter import limiter
 from helpers.listings import paged_posts, SearchType, search_posts
+from helpers.mailer import EmailType
 from models.client import Client
-from models.permissions import PunishmentType
+from models.permissions import PunishmentType, Role
 from models.post import Post
 from models.user import User, check_username, check_password
+from models.verify import Verify
 from routes import routes
 
 users = Blueprint('users', __name__, template_folder='../templates')
@@ -87,17 +91,22 @@ def login():
             try:
                 local_user = User.read(connection, username)
                 if check_password_hash(local_user.password_hash, password):
-                    current_app.logger.info(f"[IP {request.remote_addr}] User {username} logged in successfully.")
-                    token = Token.create(connection, local_user.user_id, request.remote_addr)
-                    resp = make_response(redirect(routes["home"]))
+                    if local_user.role.level > 0:
+                        current_app.logger.info(f"[IP {request.remote_addr}] User {username} logged in successfully.")
+                        token = Token.create(connection, local_user.user_id, request.remote_addr)
+                        resp = make_response(redirect(routes["home"]))
 
-                    resp.set_cookie('token', token.token_id)
-                    return resp
+                        resp.set_cookie('token', token.token_id)
+                        return resp
+                    else:
+                        verify = Verify.read(connection, user_id=local_user.user_id)
+                        return render_template("settings/email/await_verify.html", routes=routes,
+                                               verify=verify, first_time=True)
                 else:
                     current_app.logger.warning(f"[IP {request.remote_addr}] User {username} failed to log in")
                     return render_template("users/login.html", routes=routes,
                                            error_message=f'Incorrect password')
-            except NameError:
+            except NameError as e:
                 current_app.logger.warning(f"[IP {request.remote_addr}] User {username} failed to log in")
                 return render_template("users/login.html", routes=routes, user=local_user,
                                        error_message=f'User {username} does not exist')
@@ -156,18 +165,28 @@ def signup():
                 else:
                     return render_template("users/signup.html", routes=routes, user=local_user, form_data=request.form,)
 
+            # email check
+            email = ''
+            if config.require_email:
+                if request.form.get('email', '') == '':
+                    return render_template("users/signup.html", routes=routes, user=local_user,
+                                           form_data=request.form, error_message='Email required')
+
+            # check for problems with username
             user_error = check_username(username)
             if user_error is not None:
                 current_app.logger.warning(f"[IP {request.remote_addr}] Failed to create account: {user_error}")
                 return render_template("users/signup.html", routes=routes, user=local_user,
                                        error_message=user_error)
 
+            # check for problems with password
             password_error = check_password(password, verify_password)
             if password_error is not None:
                 current_app.logger.warning(f"[IP {request.remote_addr}] Failed to create account: {password_error}")
                 return render_template("users/signup.html", routes=routes, user=local_user,
                                        error_message=password_error)
 
+            # make sure the user doesn't already exist
             try:
                 test_user = User.read(connection, username)
                 user_error = f'Username {test_user.username} already exists'
@@ -175,12 +194,27 @@ def signup():
                 return render_template("users/signup.html", routes=routes, user=local_user,
                                        error_message=user_error)
             except NameError:
-                password_hash = hash_password(password)
-                local_user = User.create(connection, username=username, password_hash=password_hash)
-                token = Token.create(connection, local_user.user_id, request.remote_addr)
+                # create the user!
+                password_hash = hash_password(password) # hash the user's password
+
+                final_email = None
+                if config.require_email: # run this if email is included
+                    email = request.form.get('email')
+                    if config.require_email_verification: # send a verification email if needed
+                        local_user = User.create(connection, username=username, password_hash=password_hash)
+                        verify = Verify.create(connection, local_user.user_id, email)
+                        mailer.send_email(local_user, EmailType.VERIFY_EMAIL, verify=verify)
+                        return render_template("settings/email/await_verify.html", routes=routes,
+                                               verify=verify, first_time=True)
+                    else:
+                        final_email = email # we are OK to include the email because no verification is needed
+
+
+                local_user = User.create(connection, username=username, password_hash=password_hash, email=final_email) # create the user
+                token = Token.create(connection, local_user.user_id, request.remote_addr) # create a token for the user
 
                 resp = make_response(redirect(routes["home"]))
-                resp.set_cookie('token', token.token_id)
+                resp.set_cookie('token', token.token_id) # add an auth token cookie so the browser remembers
                 current_app.logger.info(f"[IP {request.remote_addr}] {username} created new account")
                 return resp
 

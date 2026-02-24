@@ -79,7 +79,7 @@ def change_email(pre_error=None):
                 # create the verification token and send the email
                 verify = Verify.create(connection, local_user.user_id, email)
                 server_addr = os.getenv("SERVER_ADDR")
-                mailer.send_email(server_addr, local_user, EmailType.VERIFY_CHANGE_EMAIL, verify=verify)
+                mailer.send_email(local_user, EmailType.VERIFY_CHANGE_EMAIL, verify=verify)
                 return render_template("settings/email/await_verify.html", routes=routes,
                                        user=local_user, verify=verify)
             else: # display an error, the emails do not match

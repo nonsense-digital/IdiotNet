@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 from logging.config import dictConfig
 from blueprints.main import main
 from models.client import Client
-from models.permissions import PunishmentType
+from models.permissions import PunishmentType, Role
 from werkzeug.middleware.proxy_fix import ProxyFix
 from helpers.limiter import limiter
 
@@ -75,7 +75,7 @@ def before_request():
     if request.endpoint != 'static' and request.endpoint != 'post.images':
         # get user, db, client info
         connection = get_db_connection()
-        local_user = get_authenticated_user(connection, request.cookies)
+        local_user, token = get_authenticated_user_and_token(connection, request.cookies)
         client = Client(connection, request.remote_addr)
         config = Config.get(connection)
 
@@ -88,6 +88,14 @@ def before_request():
             if local_user:
                 if local_user.check_punishment() == PunishmentType.BAN or local_user.check_punishment() == PunishmentType.PERMABAN:
                     return redirect("/banned")
+                # log out the user if they are unverified
+                if local_user.role == Role.UNVERIFIED:
+                    if config.require_email_verification:
+                        token.delete()
+                    else:
+                        local_user.role = Role.MEMBER
+
+
 
         
 # after-request housekeeping

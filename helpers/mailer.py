@@ -24,8 +24,9 @@ class EmailType(Enum):
 # Posted by Vincent Marchetti, modified by community. See post 'Timeline' for change history
 # Retrieved 2026-02-13, License - CC BY-SA 4.0
 # also thanks to https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/send-smtp
-def send_email(server_addr:str, recipient:User, email_type:EmailType, verify=None):
+def send_email(recipient:User, email_type:EmailType, verify=None):
     # format html and extract the email subject from the html
+    server_addr = os.getenv('SERVER_ADDR')
     content = get_template(server_addr, recipient, email_type, verify=verify)
     soup = BeautifulSoup(content, 'html.parser')
     subject = soup.title.string

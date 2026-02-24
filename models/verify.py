@@ -39,10 +39,18 @@ class Verify:
 
     # reads a verification challenge from the database
     @staticmethod
-    def read(connection, verify_id:str):
+    def read(connection, verify_id:str=None, user_id:int=None):
         cursor = connection.cursor()
-        cursor.execute("SELECT * FROM verify WHERE id = %s", (verify_id,))
+        if verify_id:
+            cursor.execute("SELECT * FROM verify WHERE id = %s", (verify_id,))
+        elif user_id:
+            cursor.execute("SELECT * FROM verify WHERE user_id = %s ORDER BY valid_until DESC", (user_id,))
+        else:
+            cursor.close()
+            raise ValueError("verify_id or user_id required")
+
         data = cursor.fetchone()
+        cursor.close()
         if data is None:
             raise NameError("Verification challenge not found")
         else:

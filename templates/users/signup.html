@@ -17,6 +17,10 @@
                                       {% if form_data %}value="{{ form_data.get('password',  ' ') }}"{% endif %}><br>
             <label for="verify_password">Verify Password:</label><input name="verify_password" type="password" id="verify_password" maxlength="50"
                                       {% if form_data %}value="{{ form_data.get('verify_password',  ' ') }}"{% endif %}><br>
+            {% if g.config.require_email %}
+                <label for="email">Email: </label><input name="email" type="email" id="email" maxlength="50"
+                                      {% if form_data %}value="{{ form_data.get('email',  ' ') }}"{% endif %}>
+            {% endif %}
             {% if g.config.join_code_required %}
                 <label for="join_code">Join Code:</label><input name="join_code" type="text" id="join_code" maxlength="15" ><br>
             {% endif %}
