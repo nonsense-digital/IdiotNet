@@ -90,6 +90,9 @@ def send_new_account_email(connection, username:str, password_hash:bytes, email:
 def get_template(email_type:EmailType, **kwargs):
     global SERVER_ADDR
 
+    if email_type == EmailType.PASSWORD_RESET:
+        raise NotImplementedError("Password reset functionality has not been implemented")
+
     # read email template file for templating
     current_file = Path(__file__).resolve() # get current file
     template_dir = current_file.parent.parent / "templates" / "email" # get template directory
