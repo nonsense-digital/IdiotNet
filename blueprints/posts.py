@@ -71,7 +71,8 @@ def new_post():
                 images = request.files.getlist('file')
                 if str(images) != "[<FileStorage: '' ('application/octet-stream')>]": #this is what python printed when I asked don't question it
                     for file in images:
-                        Image.create(connection, file, local_user.user_id, staged_post.post_id)
+                        i = Image.create(connection, file, local_user.user_id)
+                        i.create_attachment(staged_post.post_id)
                 current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} created post {staged_post.post_id}")
                 return redirect(staged_post.url)
             else:

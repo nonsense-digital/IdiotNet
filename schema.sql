@@ -42,7 +42,7 @@ create table comments
 );
 
 -- IMAGES
--- Image files uploading by users, tied to posts
+-- Image files uploading by users
 create table images
 (
     id            integer generated always as identity (minvalue 0)
@@ -50,7 +50,19 @@ create table images
             primary key,
     title         text default ''::text,
     author        integer not null,
-    post          integer not null
+);
+
+-- ATTACHMENTS
+-- A link between an image and a post
+-- This is necessary to provide quicker concurrent uploading
+-- It essentially makes the post creation process more efficient
+create table attachments
+(
+    id       integer generated always as identity (minvalue 0)
+        constraint attachments_pk
+            primary key,
+    post_id  integer not null,
+    image_id integer not null
 );
 
 -- POSTS

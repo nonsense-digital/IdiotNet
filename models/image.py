@@ -15,17 +15,16 @@ class Image:
         self.connection = None
         self.__title__ = None
         self.__author__ = None
-        self.__post__ = None
 
     #creates values for post id and other things associated with the image and database
     @staticmethod
-    def create(connection, file, author:int, post:int):
+    def create(connection, file, author:int):
         extension = file.filename.rsplit('.', 1)[1].lower()
         if file and '.' in file.filename and extension in ALLOWED_EXTENSIONS:
             filename = secure_filename(file.filename)
-            query = "INSERT INTO images (title, author, post) VALUES (%s, %s, %s) RETURNING id"
+            query = "INSERT INTO images (title, author) VALUES (%s, %s) RETURNING id"
             cursor = connection.cursor()
-            data = (file.filename, author, post)
+            data = (file.filename, author)
             cursor.execute(query, data)
             connection.commit()
             id = cursor.fetchone()[0]
@@ -39,7 +38,6 @@ class Image:
         image.connection = connection
         image.__title__ = file.filename
         image.__author__ = author
-        image.__post__ = post
         cursor.close()
         return image
 
@@ -62,7 +60,6 @@ class Image:
             result = cursor.fetchone()
             self.__title__ = result[1]
             self.__author__ = UserRef(self.connection, result[2])
-            self.__post__ = result[3]
         except IndexError:
             raise NameError("Image not found")
 
@@ -75,10 +72,21 @@ class Image:
     @property
     def author(self):
         return self.__author__
-    @property
-    def post(self):
-        return self.__post__
 
+    # check if the image is attached to a post
+    def is_attached(self, post_id:int):
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT * from attachments WHERE post_id = %s AND image_id = %s", (post_id, self.image_id))
+        data = cursor.fetchone()
+        cursor.close()
+        return data is not None
 
-
+    # attach the image to a post
+    def create_attachment(self, post_id:int):
+        if self.is_attached(post_id):
+            raise ValueError("Attachment already exists")
+        else:
+            cursor = self.connection.cursor()
+            cursor.execute("INSERT INTO attachments (post_id, image_id) VALUES (%s, %s)", (post_id, self.image_id))
+            cursor.close()
 

@@ -251,7 +251,7 @@ class Post:
     def images(self):
         cursor = self.connection.cursor()
         cursor.execute(
-            "SELECT id FROM images WHERE post = %s ORDER BY id",
+            "SELECT image_id FROM attachments WHERE post_id = %s ORDER BY id",
             (self.post_id,))
         images = []
         result = cursor.fetchall()
