@@ -10,7 +10,7 @@
     </head>
 
     <body itemscope itemtype="http://schema.org/EmailMessage" >
-        <p>Hello, {{ user.username }}</p><br/>
+        <p>Hello, {{ username }}</p><br/>
         <p>Thank you for joining IdiotNet! Before you can start using the website, you must
             <a href="{{ server_addr + routes["verify_email"].format(verify.verify_id)  }}">
                 verify your email.</a> This link will remain valid for one week.</p><br/>

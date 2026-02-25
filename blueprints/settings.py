@@ -1,3 +1,5 @@
+from smtplib import SMTPDataError
+
 from flask import Blueprint, render_template, request, redirect, abort
 
 from helpers import mailer
@@ -55,6 +57,7 @@ def change_password():
 def change_email(pre_error=None):
     connection = get_db_connection()
     local_user = get_authenticated_user(connection, request.cookies)
+    config = Config.get(connection)
 
     if not local_user:
         return redirect(routes["home"])
@@ -75,13 +78,25 @@ def change_email(pre_error=None):
                                        error_message='Verification already sent')
 
 
-            if email == verify_email: # create a verification challenge a notify the user of the email
-                # create the verification token and send the email
-                verify = Verify.create(connection, local_user.user_id, email)
-                server_addr = os.getenv("SERVER_ADDR")
-                mailer.send_email(local_user, EmailType.VERIFY_CHANGE_EMAIL, verify=verify)
-                return render_template("settings/email/await_verify.html", routes=routes,
-                                       user=local_user, verify=verify)
+            if email == verify_email: # check if email matches
+                if config.require_email_verification:
+                    # create the verification token and send the email
+                    verify = Verify.create(connection, local_user.user_id, email)
+                    try:
+                        mailer.send_user_email(local_user, EmailType.VERIFY_CHANGE_EMAIL, verify=verify)
+                    except RuntimeError as e:
+                        current_app.logger.error(e)
+                        verify.delete()
+                        return render_template("settings/email/index.html", routes=routes, user=local_user,
+                                               error_message='Cannot send email')
+
+                    return render_template("settings/email/await_verify.html", routes=routes,
+                                           user=local_user, verify=verify)
+                else:
+                    # set the email because no verification is needed
+                    local_user.email = email
+                    return redirect(local_user.url)
+
             else: # display an error, the emails do not match
                 return render_template("settings/email/index.html", routes=routes, user=local_user,
                                        error_message='Emails do not match')

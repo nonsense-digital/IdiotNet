@@ -1,3 +1,5 @@
+from smtplib import SMTPDataError
+
 from flask import Blueprint, render_template, abort, request, redirect, make_response
 
 from helpers import mailer
@@ -13,6 +15,7 @@ from models.post import Post
 from models.user import User, check_username, check_password
 from models.permissions import Role, PunishmentType
 from routes import routes
+from smtplib import SMTPDataError
 
 # register blueprint
 admin = Blueprint('admin', __name__, template_folder='../templates')
@@ -151,6 +154,7 @@ def admin_user_list():
 def user_punishment(username):
     connection = get_db_connection()
     local_user = get_authenticated_user(connection, request.cookies)
+    config = Config.get(connection)
     check_admin(local_user)
 
     # make sure the users exists
@@ -179,7 +183,11 @@ def user_punishment(username):
             search_user.punishment_expiration = datetime.datetime.strptime(request.form.get('expiration'), "%Y-%m-%dT%H:%M")
 
         # send punishment email & log it
-        mailer.send_email(search_user, EmailType.PUNISHMENT)
+        if config.require_email:
+            try:
+                mailer.send_user_email(search_user, EmailType.PUNISHMENT)
+            except RuntimeError as e:
+                current_app.logger.error(e)
         log_punishment(local_user, search_user)
 
         return redirect(search_user.url)

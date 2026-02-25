@@ -11,7 +11,7 @@
 
     <body itemscope itemtype="http://schema.org/EmailMessage" >
         <p>Hello, {{ user.username }}</p><br/>
-        {% if user.punishment_status != 'none' %}
+        {% if user.punishment_status.value != 'none' %}
             <p>Due to a recent rule violation, you have received a {{ user.punishment_status.value.capitalize() }}.</p><br/>
             <p>Reason: {{ user.punishment_reason }}</p>
             <p>

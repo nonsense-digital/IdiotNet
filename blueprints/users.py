@@ -166,7 +166,6 @@ def signup():
                     return render_template("users/signup.html", routes=routes, user=local_user, form_data=request.form,)
 
             # email check
-            email = ''
             if config.require_email:
                 if request.form.get('email', '') == '':
                     return render_template("users/signup.html", routes=routes, user=local_user,
@@ -201,11 +200,15 @@ def signup():
                 if config.require_email: # run this if email is included
                     email = request.form.get('email')
                     if config.require_email_verification: # send a verification email if needed
-                        local_user = User.create(connection, username=username, password_hash=password_hash)
-                        verify = Verify.create(connection, local_user.user_id, email)
-                        mailer.send_email(local_user, EmailType.VERIFY_EMAIL, verify=verify)
-                        return render_template("settings/email/await_verify.html", routes=routes,
-                                               verify=verify, first_time=True)
+                        try:
+                            verify = mailer.send_new_account_email(connection, username, password_hash, email)
+                            return render_template("settings/email/await_verify.html", routes=routes,
+                                                   verify=verify, first_time=True)
+                        except RuntimeError as e:
+                            current_app.logger.error(e)
+                            return render_template("users/signup.html", routes=routes, user=local_user,
+                                                   error_message="Cannot send verification email")
+
                     else:
                         final_email = email # we are OK to include the email because no verification is needed
 

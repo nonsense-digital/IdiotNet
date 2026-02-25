@@ -83,6 +83,15 @@ class Verify:
             raise NameError(f"Verification challenge {self.verify_id} has already been deleted.")
         return self.__user_id__
 
+    @user_id.setter
+    def user_id(self, user_id:int):
+        if self.__is_deleted__:
+            raise NameError(f"Verification challenge {self.verify_id} has already been deleted.")
+        cursor = self.connection.cursor()
+        cursor.execute("UPDATE verify SET user_id = %s WHERE id = %s", (user_id, self.verify_id))
+        cursor.commit()
+        self.__user_id__ = user_id
+
     @property
     def user(self):
         return User.read(self.connection, self.user_id)
