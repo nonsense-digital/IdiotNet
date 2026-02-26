@@ -46,4 +46,5 @@ API = {
     "follow_user": "/api/users/{}/follow",
     "comment_post": "/api/posts/{}/comment",
     "reply_comment": "/api/comments/{}/reply",
+    "upload_image": "/api/images/upload",
 }

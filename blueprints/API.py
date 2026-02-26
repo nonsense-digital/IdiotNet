@@ -3,6 +3,7 @@ from helpers.auth import *
 from helpers.db import *
 from models.client import Client
 from models.comment import Comment
+from models.image import Image
 from models.permissions import PunishmentType
 from models.user import User, check_username, check_password
 from routes import routes, API
@@ -106,3 +107,24 @@ def reply_comment(root_comment_id):
         current_app.logger.warning(
             f"[IP {request.remote_addr}] {local_user.username} cannot reply, Comment {root_comment_id} not found.")
         abort(404, "Root comment not found")
+
+# api endpoint to upload images
+@api.route(API["upload_image"], methods=['POST'])
+def upload_image():
+    connection = get_db_connection()
+    local_user = get_authenticated_user(connection, request.cookies)
+    client = Client(connection, request.remote_addr)
+    try:
+        if local_user and local_user.punishment_status == PunishmentType.NONE and client.punishment_status == PunishmentType.NONE:
+            file = request.files['file']
+            image = Image.create(connection, file, local_user.user_id)
+            response = {
+                "message": "Success"
+            }
+            return response
+        else:
+            abort(403, "User/client not allowed to post")
+    except ValueError:
+        abort(500, "Invalid information")
+    except IOError:
+        abort(500, "Upload failed")
