@@ -115,3 +115,10 @@ nav .searchbox{
 .property{
     font-weight: bold;
 }
+
+#post-images img {
+    max-width: 50vw;
+    max-height: 50vh;
+    min-width: 10vw;
+    min-height: 10vw;
+}
