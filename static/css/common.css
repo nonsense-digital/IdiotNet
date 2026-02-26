@@ -7,9 +7,18 @@ p, td, li{
     font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
 }
 
+input, textarea{
+    background-color: #cab671;
+}
+
 /* Custom Navbar */
+nav img {
+    position:relative;
+    height: 100px;
+    width: auto;
+}
 nav{
-    background-color: #C17FF0;
+    background-color: #e97f4a;
     border-bottom: 2px black solid;
 }
 
@@ -20,6 +29,7 @@ nav .searchbox{
 #main-nav{
     margin: 0%;
     padding: 0%;
+    height: 50px;
     list-style-type: none;
     overflow: hidden;
 }
@@ -37,14 +47,20 @@ nav .searchbox{
     border-top: 2px black solid;
     border-left: 2px black solid;
     border-right: 2px black solid;
-    color: darkblue;
-    background-color: yellow;
+    color: #f7e396;
+    background-color: #607b8f;
 }
 
 #main-nav li a:hover{
-    color: yellow;
-    background-color: darkblue;
+    
+    color: #607b8f;
+    background-color: #434e78;
     font-weight: bold;
+}
+
+/* background color */
+body {
+    background-color: #f7e396;
 }
 
 /* latest posts */
@@ -52,6 +68,7 @@ nav .searchbox{
     font-family: arial, sans-serif;
     border-collapse: collapse;
     width: 100%;
+    background-color: #f7e396;
 }
 
 #latest-table td th{
@@ -61,7 +78,7 @@ nav .searchbox{
 }
 
 #latest-table tr:nth-child(even) {
-    background-color: #dddddd;
+    background-color: #cab671;
 }
 
 /* login/signup */
@@ -114,4 +131,11 @@ nav .searchbox{
 
 .property{
     font-weight: bold;
+}
+
+#post-images img {
+    max-width: 50vw;
+    max-height: 50vh;
+    min-width: 10vw;
+    min-height: 10vw;
 }

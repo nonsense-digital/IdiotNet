@@ -29,7 +29,7 @@
         <div id="post-content">{{ post.content }}</div>
         <div id="post-images">
             {% for image in post.images %}
-                <img src="{{ routes['image'].format(image.image_id) }}">
+                <a href="{{ routes['image'].format(image.image_id) }}" target="_blank" > <img src="{{ routes['image'].format(image.image_id) }}"> </a>
             {% endfor %}
         </div>
         {% include 'comments.html' %}
