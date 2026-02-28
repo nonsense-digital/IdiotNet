@@ -6,6 +6,7 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_FILESIZE = 5000000;
 
 let current_images = [];
+let upload_processes = 0;
 
 $(document).ready(function() {
     let form = $("#post_form");
@@ -27,8 +28,6 @@ $(document).ready(function() {
         upload_input.on("change", function(){
             let files = upload_input.prop('files');
             if(current_images.length + files.length <= IMAGE_LIMIT){
-                submit_button.prop("disabled", true); // disable the submit button during upload
-                upload_message.text('Uploading images...'); // add loading text
                 for(let i = 0; i < files.length; i++){
                     // check for problems with the file
                     let error = null;
@@ -80,6 +79,9 @@ function addToPreview(uploads_section, file){
 function upload(uploads_section, submit_button, upload_message, file){
     let formData = new FormData();
     formData.append('file', file);
+    submit_button.prop("disabled", true); // disable the submit button during upload
+    upload_message.text('Uploading images...'); // add loading text
+    upload_processes++; // keep track of how many requests are being sent concurrently
     $.post({
         url: "/api/images/upload",
         type: "POST",
@@ -90,8 +92,13 @@ function upload(uploads_section, submit_button, upload_message, file){
             current_images.push(data.id); // add to images list
             addToPreview(uploads_section, file); // add image to preview section
             console.log(`Uploaded file ${file.name} as image #${data.id}`);
-            upload_message.text(''); // remove loading text
-            submit_button.prop('disabled', false); // enable it once the upload is complete
+            upload_processes--;
+            if(upload_processes < 1){
+                upload_message.text(''); // remove loading text
+                submit_button.prop('disabled', false); // enable it once the upload is complete
+                upload_processes = 0;
+            }
+
         },
         error: function(jqXHR, textStatus, errorThrown){
             let error_msg = `File ${file.name} could not be uploaded due to a mute/ban or network issues.`;
