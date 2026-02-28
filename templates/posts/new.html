@@ -10,18 +10,29 @@
                 <p>{{ error_message }}</p>
             </div>
         {% endif %}
-        <form action="/posts/new" method="POST" enctype="multipart/form-data">
+        <form id="post_form" action="/posts/new" method="POST" enctype="multipart/form-data">
             <label for="title">Title:</label><input name="title" type="text" id="title"><br>
             <textarea id="content" name="content" rows="5" cols="40" placeholder="Once upon a time..."></textarea><br/>
-            <input type=file name=file multiple>
+            <input id="images_input" type=file name=file accept="image/jpeg, image/png, image/webp, image/gif" multiple hidden>
+            <button id="add_images">Upload Images...</button>
+            <input id="image_ids" name="image_ids" type="text" hidden>
+
             {% if config.approve_posts and (user.role.value == 'member') %}
                 <p>Note: Your post will not be public until manually approved.</p>
             {% endif %}
-            <input class="submit" type="submit" value="Submit">
+            <input class="submit" id="post_publish" type="submit" value="Submit">
         </form>
+
+        <p id="upload_message"></p>
+        <div id="post-images">
+
+        </div>
     {% else %}
         <p>You have been muted until {{ user.punishment_expiration.strftime("%A, %B %d, %Y %H:%M") }} for: <br/>
             {{ user.punishment_reason}}</p>
     {% endif %}
 
+{% endblock %}
+{% block extra_js %}
+    <script src="/static/js/images.js"></script>
 {% endblock %}

@@ -119,7 +119,8 @@ def upload_image():
             file = request.files['file']
             image = Image.create(connection, file, local_user.user_id)
             response = {
-                "message": "Success"
+                "message": "Success",
+                "id": image.image_id
             }
             return response
         else:

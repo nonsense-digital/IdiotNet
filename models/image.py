@@ -5,7 +5,7 @@ from models.userref import UserRef
 from werkzeug.utils import secure_filename
 import os
 
-ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'gif', 'png']
+ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'gif', 'png', 'webp']
 app = Flask(__name__)
 app.config['uploads'] = 'uploads'
 

@@ -1,3 +1,5 @@
+import json
+
 from flask import Blueprint, render_template, abort, request, redirect, send_file
 from helpers.auth import *
 from helpers.db import *
@@ -58,7 +60,8 @@ def new_post():
                 # get text info from POST request
                 title = request.form.get('title')
                 content = request.form.get('content')
-                
+                image_ids = json.loads(request.form.get('image_ids'))
+
                 # check for empty content
                 if check_empty(title):
                     return render_template("posts/new.html", routes=routes, user=local_user, error_message="Title cannot be blank", client=client)
@@ -67,12 +70,10 @@ def new_post():
                 force_approve = (local_user.role != Role.MEMBER) # posts from moderators and admins don't need approval
                 staged_post = Post.publish(connection, title, content, local_user.user_id, force_approve=force_approve)
                 
-                # now that the post object exists, add the relevant info to each image
-                images = request.files.getlist('file')
-                if str(images) != "[<FileStorage: '' ('application/octet-stream')>]": #this is what python printed when I asked don't question it
-                    for file in images:
-                        i = Image.create(connection, file, local_user.user_id)
-                        i.create_attachment(staged_post.post_id)
+                # now that the post object exists, add the images to it
+                for image_id in image_ids:
+                    i = Image.read(connection, image_id)
+                    i.create_attachment(staged_post.post_id)
                 current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} created post {staged_post.post_id}")
                 return redirect(staged_post.url)
             else:
