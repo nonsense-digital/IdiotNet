@@ -279,30 +279,6 @@ def post_approval(post_id):
             post.delete()
             return redirect(routes["admin_posts_pending"])
 
-
-# an admin menu to confirm deleting a comment
-@admin.route(routes["admin_comment_delete"].format("<int:comment_id>"), methods=['GET', 'POST'])
-def comment_delete(comment_id):
-    connection = get_db_connection()
-    local_user = get_authenticated_user(connection, request.cookies)
-    check_admin(local_user)
-
-    # make sure the comment exists
-    try:
-        comment = Comment.read(connection, comment_id)
-    except NameError:
-        return abort(404)
-
-    if request.method == "GET":
-        # confirmation dialog
-        return render_template("admin/comments/delete.html", user=local_user, routes=routes, comment=comment)
-    else:
-        # delete the comment
-        post = Post.read(connection, comment.comment_page)
-        current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} deleted comment {comment.comment_id}")
-        comment.delete()
-        return redirect(post.url)
-
 # an admin view that lists the previously connected IP's in a table
 @admin.route(routes["admin_client_list"])
 def client_list():

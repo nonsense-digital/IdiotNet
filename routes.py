@@ -36,7 +36,7 @@ routes = {
     "admin_client_punish": "/admin/clients/{}/punish",
     "admin_posts_pending": "/admin/posts/pending",
     "admin_post_approval": "/admin/posts/{}/approval",
-    "admin_comment_delete": "/admin/comments/{}/delete",
+    "comment_delete": "/comments/{}/delete",
     "admin_session_delete": "/admin/sessions/{}/delete",
 }
 

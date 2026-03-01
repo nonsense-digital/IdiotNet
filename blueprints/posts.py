@@ -5,6 +5,7 @@ from helpers.auth import *
 from helpers.db import *
 from helpers.listings import paged_posts, SearchType
 from models.client import Client
+from models.comment import Comment
 from models.permissions import PunishmentType, Role
 from models.post import Post, check_empty
 from routes import routes, API
@@ -156,3 +157,28 @@ def post_delete(post_id):
             return redirect(local_user.url) # if this is a non-admin deletion, redirect to userpage
         else:
             return redirect(routes["admin_dashboard"]) # if admin, redirect to control panel
+
+# an admin menu to confirm deleting a comment
+@posts.route(routes["comment_delete"].format("<int:comment_id>"), methods=['GET', 'POST'])
+def comment_delete(comment_id):
+    connection = get_db_connection()
+    local_user = get_authenticated_user(connection, request.cookies)
+
+    # make sure the comment exists
+    try:
+        comment = Comment.read(connection, comment_id)
+        is_owner = local_user.user_id == comment.author.user_id
+        if not is_owner:  # admins/moderators can delete any comment
+            check_admin(local_user)  # but normal users can only delete their own
+    except NameError:
+        return abort(404)
+
+    if request.method == "GET":
+        # confirmation dialog
+        return render_template("comments/delete.html", user=local_user, routes=routes, comment=comment)
+    else:
+        # delete the comment
+        post = Post.read(connection, comment.comment_page)
+        current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} deleted comment {comment.comment_id}")
+        comment.delete()
+        return redirect(post.url)
