@@ -130,3 +130,29 @@ def edit_post(post_id):
             return redirect(routes["post"].format(post_id))
 
 
+# an admin menu to confirm deleting a post
+@posts.route(routes["post_delete"].format("<int:post_id>"), methods=['GET', 'POST'])
+def post_delete(post_id):
+    connection = get_db_connection()
+    local_user = get_authenticated_user(connection, request.cookies)
+
+    # check if post exists
+    try:
+        post = Post.read(connection, post_id)
+        is_owner = local_user.user_id == post.author.user_id
+        if not is_owner:  # admins/moderators can delete any posts
+            check_admin(local_user)  # but normal users can only delete their own
+    except NameError:
+        return abort(404)
+
+    if request.method == "GET":
+        # confirmation dialog
+        return render_template("posts/delete.html", user=local_user, routes=routes, post=post)
+    else:
+        # delete post
+        current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} deleted post {post_id}")
+        post.delete()
+        if is_owner:
+            return redirect(local_user.url) # if this is a non-admin deletion, redirect to userpage
+        else:
+            return redirect(routes["admin_dashboard"]) # if admin, redirect to control panel

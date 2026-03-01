@@ -20,20 +20,6 @@ from smtplib import SMTPDataError
 # register blueprint
 admin = Blueprint('admin', __name__, template_folder='../templates')
 
-# function that checks if a user has the required permissions
-# if not, abort with a 403 denied error
-def check_admin(local_user:User, admin_only=False):
-    match local_user.role:
-        case Role.ADMIN:
-            return
-        case Role.MODERATOR:
-            if admin_only:
-                abort(403)
-        case Role.MEMBER:
-            abort(403)
-        case _:
-            abort(403)
-
 # logic to log punishments for IPs and users
 def log_punishment(local_user:User, target:User|Client):
     # determine which kind of logging to used, based on if it's an IP or a user
@@ -242,28 +228,6 @@ def user_censor_bio(username):
         search_user.bio = "[CENSORED BY ADMIN]"
         current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} censored the bio of {search_user.username}")
         return redirect(search_user.url)
-
-# an admin menu to confirm deleting a post
-@admin.route(routes["admin_post_delete"].format("<int:post_id>"), methods=['GET', 'POST'])
-def post_delete(post_id):
-    connection = get_db_connection()
-    local_user = get_authenticated_user(connection, request.cookies)
-    check_admin(local_user)
-
-    # check if post exists
-    try:
-        post = Post.read(connection, post_id)
-    except NameError:
-        return abort(404)
-
-    if request.method == "GET":
-        # confirmation dialog
-        return render_template("admin/posts/delete.html", user=local_user, routes=routes, post=post)
-    else:
-        # delete post
-        current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} deleted post {post_id}")
-        post.delete()
-        return redirect(routes["admin_dashboard"])
 
 # if the "post approval" setting is enabled
 # returns a list of posts that need approval from moderators

@@ -3,7 +3,9 @@
 {% block title %}IdiotNet | Delete Post{% endblock %}
 {% block content %}
     <h1>Delete Post "{{ post.title }}"</h1>
-    <h2><a href="{{ post.author.url }}"> {{ post.author.username }}</a></h2>
+    {% if post.author.user_id != user.user_id %}
+        <h2><a href="{{ post.author.url }}"> {{ post.author.username }}</a></h2>
+    {% endif %}
     <p class="small_info">Posted at {{ post.date_posted.strftime("%Y-%m-%d %H:%M") }}</p>
     {% if post.date_modified %}
         <p class="small_info">Edited at {{ post.date_modified.strftime("%Y-%m-%d %H:%M") }}</p>

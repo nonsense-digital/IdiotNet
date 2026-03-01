@@ -28,7 +28,7 @@ class Post:
     def not_deleted(func):
         def decorator(self, *args, **kwargs):
             if self.__deleted:
-                raise TypeError("Comment deleted")
+                raise TypeError("Post deleted")
             result = func(self, *args, **kwargs)
             return result
 

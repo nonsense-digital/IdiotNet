@@ -2,8 +2,10 @@ import datetime
 import bcrypt
 from werkzeug.exceptions import BadRequestKeyError
 from models.auth_token import Token
+from models.permissions import Role
 from models.user import User
-from flask import g, current_app
+from flask import g, current_app, abort
+
 
 # get a user object from an auth token cookie
 def get_authenticated_user(connection, cookies):
@@ -88,3 +90,17 @@ def check_password_hash(password_hash:str|bytes|memoryview, user_password: str) 
     user_bytes = user_password.encode('utf-8')
     result = bcrypt.checkpw(user_bytes, hash_bytes)
     return result
+
+# function that checks if a user has the required permissions
+# if not, abort with a 403 denied error
+def check_admin(local_user:User, admin_only=False):
+    match local_user.role:
+        case Role.ADMIN:
+            return
+        case Role.MODERATOR:
+            if admin_only:
+                abort(403)
+        case Role.MEMBER:
+            abort(403)
+        case _:
+            abort(403)
