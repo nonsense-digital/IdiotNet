@@ -90,3 +90,19 @@ class Image:
             cursor.execute("INSERT INTO attachments (post_id, image_id) VALUES (%s, %s)", (post_id, self.image_id))
             cursor.close()
 
+    # detach from a specific post
+    def delete_attachment(self, post_id:int):
+        cursor = self.connection.cursor()
+        cursor.execute("DELETE FROM attachments WHERE image_id = %s AND post_id = %s", (self.image_id, post_id))
+        cursor.close()
+        self.connection.commit()
+
+    # detach from all posts and delete
+    def delete(self):
+        cursor = self.connection.cursor()
+        cursor.execute("DELETE FROM attachments WHERE image_id = %s", (self.image_id,)) # detach from posts if needed
+        cursor.execute("DELETE FROM images WHERE id = %s", (self.image_id,)) # delete actual image
+        cursor.close()
+        self.connection.commit()
+
+

@@ -305,6 +305,10 @@ class Post:
         cursor = self.connection.cursor()
         cursor.execute("DELETE FROM likes WHERE liked = %s", (self.post_id,))
 
+        # detach all images
+        for post in self.images:
+            post.delete_attachment(self.post_id)
+
         # delete this specific post from the db once we know for sure nothing else refers to it
         cursor = self.connection.cursor()
         cursor.execute("DELETE FROM posts WHERE id = %s", (self.post_id,))
