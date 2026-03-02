@@ -29,6 +29,7 @@ if not os.path.isdir('log'):
     os.makedirs('log')
 dictConfig({
     'version': 1,
+    'disable_existing_loggers': False,
     'formatters': {
         'default': {
             'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
@@ -41,7 +42,7 @@ dictConfig({
         'wsgi': {
             'class': 'logging.StreamHandler',
             'level': 'INFO',
-            'stream': 'ext://flask.logging.wsgi_errors_stream',
+            'stream': 'ext://sys.stdout',
             'formatter': 'default'
         },
         'file': {
@@ -51,6 +52,13 @@ dictConfig({
             'filename': './log/flask.log',
             'maxBytes': 51200
         },
+    },
+    'loggers': {
+        'waitress': {
+            'level': 'INFO',
+            'handlers': ['wsgi'],
+            'propagate': False
+        }
     },
     'root': {
         'level': 'INFO',
