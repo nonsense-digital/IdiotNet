@@ -39,7 +39,7 @@
     {% if g.config.has_announcement_banner %}
         <div id="error">
             <span class="property">ANNOUNCEMENT: </span>
-            {{ g.config.announcement_banner }}
+            {{ g.config.announcement_banner|safe }}
         </div>
     {% endif %}
 
