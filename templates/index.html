@@ -5,8 +5,8 @@
     <h1>Welcome to IdiotNet!</h1>
     <h2>Latest Posts</h2>
     <ol id="latest">
-        {% for post in latest_posts(3) %}
-            <li><a href="{{ post.url }}">{{ post.title }}</a></li>
+        {% for post in latest_posts %}
+            <li><a href="{{ post.url }}" data-post-id="{{ post.post_id }}">{{ post.title }}</a></li>
         {% endfor %}
     </ol>
     <a href="{{ routes['latest'] }}">See More...</a>

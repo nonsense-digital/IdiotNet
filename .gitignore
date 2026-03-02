@@ -1,5 +1,10 @@
 .venv
 .idea
+.env
 __pycache__
 idiotnet.sqlite
 IdiotNet.iml
+scripts
+keys
+log/*
+uploads/*

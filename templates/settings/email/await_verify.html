@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+
+{% block title %}IdiotNet | Email Sent{% endblock %}
+{% block content %}
+    <h1>A verification email has been sent</h1>
+    <p>Check your inbox or spam folder, you will need this to change your account's email to {{ verify.email }}</p><br/>
+    {% if first_time %}<p>You need to verify this email before you log in. If you can no longer access the email, please
+    contact {{ g.config.support_email if g.config.has_support_email else 'the website administrator.' }}</p>{% endif %}
+{% endblock %}

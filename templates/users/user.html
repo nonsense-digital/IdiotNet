@@ -3,34 +3,61 @@
 {% block title %}IdiotNet | {{ search_user.username }}{% endblock %}
 {% block content %}
     <h1>{{ search_user.username }}</h1>
-    <h3><span id="follower-count">{{ search_user.follower_count() }}</span> Followers</h3>
-    {% if user %}
-    <button id="follow" data-username="{{ search_user.username }}" data-follow="{{ not user.username in search_user.followers }}"></button>
-    {% endif %}
-    <h2>About</h2>
-    <p id="about">{{ user.bio }}</p>
-    <a href="{{ request.url + "\edit" }}">Edit...</a>
-    <h2>Latest Posts</h2>
-    {% if posts_latest != [] %}
-        <ol>
-            {% for post in posts_latest %}
-                <li><a href="{{ post.url }}">{{ post.title }}</a></li>
-            {% endfor %}
-        </ol>
-        <a href="{{ routes['user_posts'].format(search_user.username) }}">See More...</a>
+    {% if search_user.punishment_status.value != "permaban" %}
+        {% if search_user.role.value != "member" %}
+            <h2>{{ search_user.role.value }}</h2>
+        {% endif %}
+        <h3><span id="follower-count">{{ search_user.follower_ids|length }}</span> Followers</h3>
+        {% if user %}
+            <button id="follow" data-username="{{ search_user.username }}" data-follow="{{ not user.is_followed(search_user.user_id) }}"></button>
+        {% endif %}
+        <h2>About</h2>
+        <pre id="about">{{ search_user.bio }}</pre>
+        {% if user.username == search_user.username %}
+            <a href="{{ request.url + "\edit" }}">Edit...</a>
+            <a href="{{ routes["change_password"] }}">Change Password...</a>
+            <a href="{{ routes["change_email"] }}">Change Email...</a>
+        {% endif %}
+
+        <h2>Latest Posts</h2>
+        {% if posts_latest != [] %}
+            <ol>
+                {% for post in posts_latest %}
+                    <li><a href="{{ post.url }}">{{ post.title }}</a></li>
+                {% endfor %}
+            </ol>
+            <a href="{{ routes['user_posts'].format(search_user.username) }}">See More...</a>
+        {% else %}
+            <p>This loser hasn't posted anything yet!!!</p>
+        {% endif %}
+        <h2>Liked Posts</h2>
+        {% if posts_liked != [] %}
+            <ol>
+                {% for post in posts_liked %}
+                    <li><a href="{{ post.url }}">{{ post.title }}</a></li>
+                {% endfor %}
+            </ol>
+            <a href="{{ routes['user_liked_posts'].format(search_user.username) }}">See More...</a>
+        {% else %}
+            <p>Hmmm... this person doesn't like anything......</p>
+        {% endif %}
+        {% if (user) and (user.role.value != "member") and (search_user.user_id != user.user_id) %}
+            {% if (user.role.value == "admin") or ((user.role.value == "admin") and (search_user.role.value == "moderator")) %}
+                <div class="mod-menu">
+                    <h2>{{ user.role.value.capitalize() }} Options</h2>
+                    <ul>
+                        <li><a href="{{ routes["admin_user_punish"].format(search_user.username) }}">Punish</a></li>
+                        <li><a href="{{ routes["admin_user_censor_bio"].format(search_user.username) }}">Censor Bio</a></li>
+                        {% if user.role.value == "admin" %}
+                            <li><a href="{{ routes["admin_user_change_role"].format(search_user.username) }}">Change Role</a></li>
+                            <li><a href="{{ routes["admin_user_sessions"].format(search_user.username) }}">View Sessions</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% endif %}
+        {% endif %}
     {% else %}
-        <p>This loser hasn't posted anything yet!!!</p>
-    {% endif %}
-    <h2>Liked Posts</h2>
-    {% if posts_liked != [] %}
-        <ol>
-            {% for post in posts_liked %}
-                <li><a href="{{ post.url }}">{{ post.title }}</a></li>
-            {% endfor %}
-        </ol>
-        <a href="{{ routes['user_liked_posts'].format(search_user.username) }}">See More...</a>
-    {% else %}
-        <p>Hmmm... this person doesn't like anything......</p>
+        <p>This user has been removed due to violations of IdiotNet rules.</p>
     {% endif %}
 
 {% endblock %}

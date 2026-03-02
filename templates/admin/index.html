@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}IdiotNet | Admin Dashboard{% endblock %}
+{% block content %}
+    <h1>Admin Dashboard</h1>
+    {% if user.role == "member" %}
+        <p>Haha, nice try</p>
+    {% else %}
+        {% if config.approve_posts or posts|length > 0 %}
+            <h2>Unapproved Posts</h2>
+            <ol id="latest">
+                {% for post in posts %}
+                    <li><a href="{{ routes["admin_post_approval"].format(post.post_id) }}">{{ post.title }}</a></li>
+                {% endfor %}
+            </ol>
+            <a href="{{ routes['admin_posts_pending'] }}">See More...</a>
+        {% endif %}
+        <h2>Users</h2>
+             <ol id="latest">
+                {% for user in users %}
+                    <li><a href="{{ user.url }}" >{{ user.username }}</a></li>
+                {% endfor %}
+             </ol>
+             <a href="{{ routes['admin_users'] }}">See More...</a>
+        <h2>Clients</h2>
+            <ol id="latest">
+                {% for client in clients %}
+                    <li><a href="{{ routes["admin_client_punish"].format(client.ip) }}" >{{ client.ip }}</a></li>
+                {% endfor %}
+            </ol>
+            <a href="{{ routes['admin_client_list'] }}">See More...</a>
+        <h2>Advanced</h2>
+        <span id="property">IdiotNet Version: </span> <span>{{ config.version }}</span><br/>
+        <span id="property">Join Code: </span> <span>{{ config.join_code if config.join_code_required else '[NOT ENABLED]' }}</span><br/>
+        <span id="property">Signup Allowed: </span> <span>{{ config.allow_signup }}</span><br/>
+        <span id="property">Require Post Approval: </span> <span>{{ config.approve_posts }}</span><br/>
+        <span id="property">Support Email: </span><span>{{ config.support_email if config.has_support_email else '[NOT ENABLED]' }}</span><br/>
+        <span id="property">Announcement Banner: </span><span>{{ config.announcement_banner if config.has_announcement_banner else '[NOT ENABLED]' }}</span><br/>
+        <span id="property">Require User Emails: </span><span>{{ config.require_email }}</span><br/>
+        <span id="property">Require User Email Verification: </span><span>{{ config.require_email_verification }}</span><br/>
+
+        {% if user.role.value == 'admin' %}
+            <a href="{{ routes["admin_config"] }}">Change Configuration...</a>
+        {% endif %}
+    {% endif %}
+{% endblock %}

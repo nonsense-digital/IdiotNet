@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}IdiotNet | Punish Client{% endblock %}
+{% block content %}
+    <h1>Punish Client</h1>
+    {% include 'admin/clients/client-info.html' %}
+    <form action="{{ request.url }}" id="punishment_form" method="post">
+            <label for="punishment" id="punishment_label">Punishment: </label>
+                <select id="punishment" name="punishment">
+                    {% for punishment in PunishmentType.__members__.values() %}
+                        {% if punishment.value != 'permaban' %}
+                            <option value="{{ punishment.value }}">{{ punishment.value.capitalize() }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            <label for="expiration" id="expiration_label">Expiration: </label>
+                <input id="expiration" name="expiration" type="datetime-local" disabled="disabled">
+            <label for="reason" id="reason_label">Reason: </label>
+                <input id="reason" name="reason" type="text" value="You violated IdiotNet rules" disabled="disabled">
+            <p>This will last the ban expires or the ban is revoked or overwritten by another punishment. (Keep in mind you can change the expiration date if you want)</p>
+        <input id="submit" name="submit" type="submit" value="Submit">
+    </form>
+{% endblock %}
+{% block extra_js %}
+    <script src="/static/js/admin.js"></script>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}IdiotNet | Delete Post{% endblock %}
+{% block content %}
+    <h1>Delete Post "{{ post.title }}"</h1>
+    <h2><a href="{{ post.author.url }}"> {{ post.author.username }}</a></h2>
+    <p class="small_info">Posted at {{ post.date_posted.strftime("%Y-%m-%d %H:%M") }}</p>
+    {% if post.date_modified %}
+        <p class="small_info">Edited at {{ post.date_modified.strftime("%Y-%m-%d %H:%M") }}</p>
+    {% endif %}
+    <h3><span id="like-count">{{ post.likes_count }}</span> Likes</h3>
+    <div id="post-content">{{ post.content }}</div>
+    <h3><span id="like-count">{{ post.all_comments|length }}</span> Comments</h3>
+    <form action="{{ request.url }}" id="punishment_form" method="post">
+        <input id="submit" name="submit" type="submit" value="Delete">
+    </form>
+{% endblock %}

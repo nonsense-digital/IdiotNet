@@ -1,308 +1,154 @@
-import sqlite3
-from flask import Flask, request, render_template, redirect, make_response, abort, jsonify
-from post import Post
-from user import User
-from routes import routes, API
-from auth_token import Token
+# a whole ton of imported modules
+from __future__ import annotations
+from flask import Flask, request, abort, redirect
+from blueprints.posts import posts
+from blueprints.settings import settings
+from blueprints.users import users
+from blueprints.API import api
+from blueprints.admin import admin
+from blueprints.errors import errors
+from helpers.db import *
+from helpers.auth import *
+from models.auth_token import Token
 import os
+from dotenv import load_dotenv
+from logging.config import dictConfig
+from blueprints.main import main
+from models.client import Client
+from models.permissions import PunishmentType, Role
+from werkzeug.middleware.proxy_fix import ProxyFix
+from helpers.limiter import limiter
+
+# Set up Flask app
 app = Flask(__name__)
 
+# Configures logging for the Flask server
+# Code snippet from https://flask.palletsprojects.com/en/stable/logging/
+# And also from https://docs.python.org/3/library/logging.config.html#logging-config-dictschema
+if not os.path.isdir('log'):
+    os.makedirs('log')
+dictConfig({
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'default': {
+            'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+        },
+        'plain': {
+            'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+        }
+    },
+    'handlers': {
+        'wsgi': {
+            'class': 'logging.StreamHandler',
+            'level': 'INFO',
+            'stream': 'ext://sys.stdout',
+            'formatter': 'default'
+        },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'level': 'INFO',
+            'formatter': 'plain',
+            'filename': './log/flask.log',
+            'maxBytes': 51200
+        },
+    },
+    'loggers': {
+        'waitress': {
+            'level': 'INFO',
+            'handlers': ['wsgi'],
+            'propagate': False
+        }
+    },
+    'root': {
+        'level': 'INFO',
+        'handlers': ['wsgi', 'file']
+    }
+})
 
-def latest_posts(count:int, offset=0, search_user:User=None, sort_by="latest", filter=None) -> tuple:
-    connection = sqlite3.connect('idiotnet.sqlite')
-    if not search_user:
-        posts = Post.latest(connection, count, offset*count, sort_by)
-    else:
-        if filter == "liked":
-            posts = search_user.liked(connection, count, offset*count)
-        else:
-            posts = search_user.latest(connection, count, offset*count)
-    connection.close()
-    return posts
+# set up logger for security
+if os.getenv('PROXY_FIX') == 'true':
+    with app.app_context():
+        current_app.logger.info('Proxy fix is enabled')
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1) # thanks to https://sentry.io/answers/get-the-ip-address-of-a-visitor-in-flask/
 
-def paged_posts(page:int, search_user:User=None, sort_by="latest", filter=None) -> tuple:
-    posts = latest_posts(20, page - 1, search_user, sort_by, filter)
-    is_last_page = len(posts) < 20
-    return posts, is_last_page
+load_dotenv()
+limiter.init_app(app)
 
-@app.route(routes["home"])
-def index():
-    connection = sqlite3.connect('idiotnet.sqlite')
-    local_user = check_token(connection, request.cookies)
-    return render_template('index.html', routes=routes, user=local_user, latest_posts=latest_posts)
+# not thanks to my good friend Tristin Porter for the rate limit system (it slowed down the website)
+# https://github.com/nonsense-digital/IdiotNet/issues/1
+@app.before_request
+def before_request():
+    # only track the client if it is requesting a non-static endpoint
+    if request.endpoint != 'static' and request.endpoint != 'post.images':
+        # get user, db, client info
+        connection = get_db_connection()
+        local_user, token = get_authenticated_user_and_token(connection, request.cookies)
+        client = Client(connection, request.remote_addr)
+        config = Config.get(connection)
 
-@app.route(routes["latest"])
-def latest():
-    sort_by = request.args.get("sort_by")
-    connection = sqlite3.connect('idiotnet.sqlite')
-    local_user = check_token(connection, request.cookies)
-    page = request.args.get('page')
-    if not page:
-        page = 1
-    else:
-        page = int(page)
-    posts, is_last_page = paged_posts(page, sort_by=sort_by)
-    return render_template('posts/latest.html', routes=routes, user=local_user, posts=posts, is_last_page=is_last_page, page=page)
+        # don't do the ban message if the user is already on ban (we don't want an infinite loop)
+        if request.endpoint != 'errors.banned_message' and request.endpoint != 'users.logout':
+            # check for IP ban
+            if client.check_punishment() == PunishmentType.BAN:
+               return redirect("/banned")
+            # check for user ban
+            if local_user:
+                if local_user.check_punishment() == PunishmentType.BAN or local_user.check_punishment() == PunishmentType.PERMABAN:
+                    return redirect("/banned")
+                # log out the user if they are unverified
+                if local_user.role == Role.UNVERIFIED:
+                    if config.require_email_verification:
+                        token.delete()
+                    else:
+                        local_user.role = Role.MEMBER
 
-@app.route(routes["user"].format("<username>"))
-def user(username):
-    try:
-        connection = sqlite3.connect('idiotnet.sqlite')
-        local_user = check_token(connection, request.cookies)
-        search_user = User.read(connection, username)
-        posts_latest = latest_posts(3, 0, search_user)
-        posts_liked = latest_posts(3, 0, search_user, filter="liked")
-        return render_template('users/user.html', routes=routes, posts_latest=posts_latest, posts_liked=posts_liked, user=local_user, search_user=search_user)
-    except NameError:
-        abort(404, "User not found")
 
-@app.route(routes["user_posts"].format("<username>"))
-def user_posts(username):
-    try:
-        connection = sqlite3.connect('idiotnet.sqlite')
-        local_user = check_token(connection, request.cookies)
-        page = request.args.get('page')
-        if not page:
-            page = 1
-        else:
-            page = int(page)
-        search_user = User.read(connection, username)
-        posts, is_last_page = paged_posts(page, search_user)
-        connection.close()
-        return render_template('users/posts.html', type="Posts", routes=routes, user=local_user, posts=posts, is_last_page=is_last_page, page=page, search_user=search_user)
-    except NameError:
-        abort(404, "User not found")
 
-@app.route(routes["user_liked_posts"].format("<username>"))
-def user_liked_posts(username):
-    try:
-        connection = sqlite3.connect('idiotnet.sqlite')
-        local_user = check_token(connection, request.cookies)
-        page = request.args.get('page')
-        if not page:
-            page = 1
-        else:
-            page = int(page)
-        search_user = User.read(connection, username)
-        posts, is_last_page = paged_posts(page, search_user, filter="liked")
-        connection.close()
-        return render_template('users/posts.html', type="Liked Posts", routes=routes, user=local_user, posts=posts, is_last_page=is_last_page, page=page, search_user=search_user)
-    except NameError:
-        abort(404, "User not found")
-
-@app.route(routes["post"].format("<int:post_id>"))
-def post(post_id):
-    connection = sqlite3.connect('idiotnet.sqlite')
-    local_user = check_token(connection, request.cookies)
-    try:
-        read_post = Post.read(connection, post_id)
-        author = User.read(connection, read_post.author)
-        connection.close()
-        return render_template('posts/post.html', routes=routes, user=local_user, post=read_post, author=author)
-    except NameError:
-        abort(404, "Post not found")
-
-def check_token(connection, cookies):
-    if 'token' in cookies:
+        
+# after-request housekeeping
+@app.after_request
+def after_request(response):
+    # if the delete token flag is present, delete the invalid token
+    if hasattr(g, 'delete_token_cookie'):
+        response.delete_cookie('token')
+    elif 'token' in request.cookies:
+        connection = get_db_connection()
         try:
-            token = Token.read(connection, cookies['token'])
-            local_user = User.read(connection, token.username)
-            return local_user
+            # extend lifetime of cookie
+            token = Token.read(connection, request.cookies['token'])
+            token.extend_lifetime(connection)
+            response.set_cookie("token", request.cookies['token'], max_age=datetime.timedelta(days=7))
         except NameError:
-            return None
-    else:
-        return None
+            # delete cookie if invalid
+            response.delete_cookie('token')
+    return response
 
-@app.route(routes["login"], methods=['GET', 'POST'])
-def login():
-    connection = sqlite3.connect('idiotnet.sqlite')
-    local_user = check_token(connection, request.cookies)
+# server shutdown cleanup
+@app.teardown_appcontext
+def teardown(exception):
+    close_db_connection()
 
-    if local_user:
-        connection.close()
-        print(f"{local_user.username} is already logged in")
-        return redirect(routes["home"])
-    else:
-        if request.method == 'GET':
-            connection.close()
-            return render_template("users/login.html", routes=routes, user=local_user)
-        else:
-            username = request.form.get('username')
-            password = request.form.get('password')
+# thanks to https://stackoverflow.com/questions/79040845/flask-url-for-with-path-parameter-and-query-parameter#:~:text=1%20Answer,233
+def combine_view_args(*args):
+    dic = {}
+    for arg in args:
+        dic.update(arg)
+    return dic
+@app.context_processor
+def utility_processor():
+    return dict(combine_view_args=combine_view_args)
 
-            try:
-                local_user = User.read(connection, username)
+# before the server really does anything, make sure the database schema is correct
+# an up-to-date schema will prevent weird database glitches from happening
+with app.app_context():
+    check_db_version()
 
-                if local_user.password == password:
-                    print(f"User {username} logged in successfully")
-                    token = Token(local_user.username)
-                    resp = make_response(redirect(routes["home"]))
-                    token.create(connection)
-                    connection.close()
-                    resp.set_cookie('token', token.token_id)
-                    return resp
-                else:
-                    print(f"User {username} failed to log in")
-                    connection.close()
-                    return render_template("users/login.html", routes=routes, user=local_user, error_message=f'Incorrect password')
-            except NameError:
-                return render_template("users/login.html", routes=routes, user=local_user, error_message=f'User {username} does not exist')
-
-@app.route(routes["new_post"], methods=['GET', 'POST'])
-def new_post():
-    connection = sqlite3.connect('idiotnet.sqlite')
-    local_user = check_token(connection, request.cookies)
-
-    if not local_user:
-        connection.close()
-        return redirect(routes["login"])
-    else:
-        if request.method == 'GET':
-            connection.close()
-            return render_template("posts/new.html", routes=routes, user=local_user)
-        else:
-            title = request.form.get('title')
-            content = request.form.get('content')
-
-            staged_post = Post(title, content, local_user.username)
-            staged_post.publish(connection, local_user)
-            print(f"{local_user.username} created post #{staged_post.post_id}")
-            return redirect(staged_post.url)
-
-@app.route(routes["user_edit"].format("<username>"), methods=['GET', 'POST'])
-def user_edit(username):
-    connection = sqlite3.connect('idiotnet.sqlite')
-    local_user = check_token(connection, request.cookies)
-
-    if not local_user:
-        connection.close()
-        return redirect(routes["login"])
-    else:
-        if request.method == 'GET':
-            connection.close()
-            return render_template("users/edit.html", routes=routes, user=local_user)
-        else:
-            content = request.form.get('content')
-
-            local_user.update_bio(connection, content)
-            print(f"{local_user.username} edited their user bio")
-            return redirect(routes["user"].format(local_user.username))
-
-@app.route(routes["signup"], methods=['GET', 'POST'])
-def signup():
-    connection = sqlite3.connect('idiotnet.sqlite')
-    local_user = check_token(connection, request.cookies)
-
-    if local_user:
-        connection.close()
-        print(f"{local_user.username} is already logged in")
-        return redirect(routes["home"])
-    else:
-        if request.method == 'GET':
-            connection.close()
-            return render_template("users/signup.html", routes=routes, user=local_user, error_message=None)
-        else:
-            username = request.form.get('username')
-            password = request.form.get('password')
-            verify_password = request.form.get('verify_password')
-
-            if verify_password == password:
-                try:
-                    test_user = User.read(connection, username)
-                    return render_template("users/signup.html", routes=routes, user=local_user,
-                                           error_message=f'Username {test_user.username} already exists')
-                except NameError:
-                    local_user = User(username=username, password=password)
-                    local_user.create(connection)
-                    token = Token(local_user.username)
-                    resp = make_response(redirect(routes["home"]))
-                    token.create(connection)
-                    connection.close()
-                    resp.set_cookie('token', token.token_id)
-                    print(f'User {username} created')
-                    return resp
-            else:
-                connection.close()
-                return render_template("users/signup.html", routes=routes, user=local_user, error_message="Passwords do not match")
-
-@app.route(routes["about"])
-def about():
-    connection = sqlite3.connect('idiotnet.sqlite')
-    local_user = check_token(connection, request.cookies)
-    return render_template('about.html', routes=routes, user=local_user)
-
-@app.route(routes["logout"])
-def logout():
-    connection = sqlite3.connect('idiotnet.sqlite')
-    local_user = check_token(connection, request.cookies)
-
-    if not local_user:
-        connection.close()
-        return redirect(routes["home"])
-    else:
-        resp = redirect(routes["home"])
-        token_id = request.cookies['token']
-        cursor = connection.cursor()
-        cursor.execute("DELETE FROM tokens WHERE id = ?", (token_id,))
-        connection.commit()
-        cursor.close()
-        resp.delete_cookie('token')
-        connection.close()
-        return resp
-
-@app.route(API["like_post"].format("<int:post_id>"), methods=['POST'])
-def like_post(post_id):
-    connection = sqlite3.connect('idiotnet.sqlite')
-    local_user = check_token(connection, request.cookies)
-    try:
-        json_data = request.get_json()
-        liked_post = Post.read(connection, post_id)
-
-        try:
-            liked_post.like(connection, local_user, bool(json_data.get("like")))
-            response = {
-            "message": "Success"
-            }
-        except ValueError:
-            response = {
-                "message": "Cannot be done"
-            }
-        return jsonify(response)
-    except NameError:
-        abort(404, "Post not found")
-
-@app.route(API["follow_user"].format("<username>"), methods=['POST'])
-def follow_user(username):
-    connection = sqlite3.connect('idiotnet.sqlite')
-    local_user = check_token(connection, request.cookies)
-    try:
-        json_data = request.get_json()
-        followed_user = User.read(connection, username)
-
-        try:
-            followed_user.add_follower(connection, local_user, bool(json_data.get("follow")))
-            response = {
-            "message": "Success"
-            }
-        except ValueError:
-            response = {
-                "message": "Cannot be done"
-            }
-        return jsonify(response)
-    except NameError:
-        abort(404, "User not found")
-
-@app.route("/static/<path:file>")
-def static_file(file):
-    return static_file(file)
-
-def create_db():
-    connection = sqlite3.connect('idiotnet.sqlite')
-    with open('create_db.sql', 'r') as f:
-        sql_script = f.read()
-        connection.executescript(sql_script)
-        connection.commit()
-    connection.close()
-
-if not os.path.exists('idiotnet.sqlite'):
-    create_db()
+# register blueprints
+app.register_blueprint(main)
+app.register_blueprint(users)
+app.register_blueprint(posts)
+app.register_blueprint(api)
+app.register_blueprint(settings)
+app.register_blueprint(admin)
+app.register_blueprint(errors)

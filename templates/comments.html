@@ -1,0 +1,49 @@
+<ul id="comments">
+    {% if user %}
+        {% if user.punishment_status.value != "mute" %}
+            <li>Post comment: <form action="{{ API["comment_post"].format(post.post_id) }}" method="POST">
+                <input id="content" name="content" placeholder="Hey.....">
+                <input type="submit" value="Submit">
+            </form></li>
+        {% else %}
+            <p>You have been muted until {{ user.punishment_expiration.strftime("%A, %B %d, %Y %H:%M") }} for: <br/>
+            {{ user.punishment_reason}}</p>
+        {% endif %}
+    {% endif %}
+    {% for comment in post.comments|reverse %}
+        <li><a href="{{ routes["user"].format(comment.author.username) }}">{{ comment.author.username }}</a>: {{ comment.content }}
+            {% if (user) and ((user.role.value != "member") or (user.user_id == comment.author.user_id)) %}
+                            <a href="{{ routes["comment_delete"].format(comment.comment_id) }}">
+                                <img src="/static/images/x-solid-full.svg" width="10" height="10" alt="delete comment">
+                            </a>
+            {% endif %}
+            <ul class="replies">
+                {% for reply in comment.replies %}
+                    <li>
+                        <a href="{{ routes["user"].format(reply.author.username) }}">{{ reply.author.username }}</a>: {{ reply.content }}
+                        {% if (user) and ((user.role.value != "member") or (user.user_id == reply.author.user_id)) %}
+                            <a href="{{ routes["comment_delete"].format(reply.comment_id) }}">
+                                <img src="/static/images/x-solid-full.svg" width="10" height="10" alt="delete comment">
+                            </a>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+                {% if user %}
+                    {% if user.punishment_status.value != "mute" %}
+                        <li>
+                            <details>
+                                <summary>Reply...</summary>
+
+                                    <form action="{{ API["reply_comment"].format(comment.comment_id) }}" method="POST">
+                                        <input id="content" name="content" placeholder="Hey.....">
+                                        <input class="submit" type="submit" value="Submit">
+                                    </form>
+
+                            </details>
+                        </li>
+                    {% endif %}
+                {% endif %}
+            </ul>
+        </li>
+    {% endfor %}
+</ul>

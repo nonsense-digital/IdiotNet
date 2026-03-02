@@ -1,0 +1,34 @@
+<table id="latest-table">
+    <tr><th>
+        {% if user_view %}
+            IP
+        {% else %}
+            User
+        {% endif %}</th>
+        <th>ID</th>
+        <th>Expiration</th>
+        <th>Delete</th></tr>
+    {% for token in sessions %}
+        <tr>
+            <td>
+                {% if user_view %}
+                    <a href="{{ routes["admin_client_sessions"].format(token.client_ip) }}">{{ token.client_ip }}</a>
+                {% else %}
+                    <a href="{{ token.user.url }}">{{ token.user.username }}</a>
+                {% endif %}
+            </td>
+            <td>{{ token.token_id }}</td>
+            <td>{{ token.valid_until.strftime("%Y-%m-%d %H:%M:%S.%f")}}</td>
+            <td><a href="{{ routes["admin_session_delete"].format(token.token_id) }}">Delete</a></td>
+        </tr>
+    {% endfor %}
+</table>
+
+<!-- Basic pagination -->
+{% if page > 1 %}
+    <a href="{{  url_for(request.endpoint, **combine_view_args(request.args,request.view_args,{'page':page-1}))|string }}">Previous</a>
+{% endif %}
+<span>Page {{ page }}</span>
+{% if not is_last_page %}
+    <a href="{{ url_for(request.endpoint, **combine_view_args(request.args,request.view_args,{'page':page + 1}))|string}}">Next</a>
+{% endif %}

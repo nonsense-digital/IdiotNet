@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}IdiotNet | Banned{% endblock %}
+{% block content %}
+    <h1>Your IP has been banned</h1>
+    <p>All users under your IP address have been
+        {% if client.punishment_status.value == "ban" %} temporarily banned
+        {% else %} NOT banned (why are you here) {% endif %}
+        due to a violation of idiotnet rules. </p>
+    <span class="property">Reason: </span><span>{{ client.punishment_reason }}</span><br/>
+    {% if client.punishment_status.value == "ban" %}
+    <span class="property">Banned until: </span><span>{{ client.punishment_expiration.strftime("%A, %B %d, %Y %H:%M") }}</span><br/>
+    {% else %}
+    <p>Wait... you're not banned... How did you get here?!</p>
+    {% endif %}
+
+{% endblock %}

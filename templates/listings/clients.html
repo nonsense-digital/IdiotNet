@@ -1,0 +1,33 @@
+<table id="latest-table">
+    <tr><th>IP</th><th>Sessions</th><th>Punishment</th><th>Punishment Expiration</th><th>Punishment Reason</th></tr>
+    {% for client in clients %}
+        <tr>
+            <td><a href="{{ routes["admin_client_punish"].format(client.ip) }}" >{{ client.ip }}</a></td>
+            <td><a href="{{ routes["admin_client_sessions"].format(client.ip) }}">{{ client.token_ids|length }} Sessions</a></td>
+            <td> {{ client.punishment_status.value.capitalize() }} </td>
+            <td>
+                {% if client.punishment_status != 'none' and client.punishment_status != 'permaban' %}
+                    {{ client.punishment_expiration.strftime("%Y-%m-%d %H:%M") }}
+                {% else %}
+                    N/A
+                {% endif %}
+            </td>
+            <td>
+                {% if client.punishment_status != 'none'%}
+                    {{ client.punishment_reason }}
+                {% else %}
+                    N/A
+                {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+</table>
+
+<!-- Basic pagination -->
+{% if page > 1 %}
+    <a href="{{  url_for(request.endpoint, **combine_view_args(request.args,request.view_args,{'page':page-1}))|string }}">Previous</a>
+{% endif %}
+<span>Page {{ page }}</span>
+{% if not is_last_page %}
+    <a href="{{ url_for(request.endpoint, **combine_view_args(request.args,request.view_args,{'page':page + 1}))|string}}">Next</a>
+{% endif %}
