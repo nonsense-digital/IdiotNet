@@ -1,25 +1,209 @@
-/* general */
-h1, h2, th {
-    font-family: Arial, Helvetica, sans-serif;
+/*fonts*/
+@font-face {
+  font-family: 'IBM Plex Sans Devanagari';
+  src: url('/static/fonts/IBMPlexSansDevanagari-Medium.ttf');
 }
 
-p, td, li{
-    font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+@font-face {
+  font-family: 'IBM Plex Sans BOLD';
+  src: url('/static/fonts/IBMPlexSansDevanagari-Bold.ttf');
+}
+
+@font-face {
+  font-family: 'Noto sans';
+  src: url('/static/fonts/NotoSansCyproMinoan-Regular.ttf');
+}
+
+/* general */
+h1, h2, h3, h4, h5, h6, th, label, .edit {
+    font-family: "Noto sans", sans-serif;
+    font-weight: 700;
+}
+
+p, td, #post-content, li:not(.nav-button), pre, span, a{
+    font-family:  "Noto sans", sans-serif;
+    font-weight: 400;
+}
+
+textarea {
+    display: block;
+    margin-top: 1vh;
+    -webkit-appearance: none;
+    appearance: none;
+    border-radius: 8px;
+    font-family:  "Noto sans", sans-serif;
+    font-weight: 400;
+    width: 40vw;
+    height: 35vh;
+    resize: none;
+
+}
+
+button, input {
+    font-family: "Noto sans", sans-serif;
+    font-weight: 700;
+    border-radius: 8px;
+}
+
+input, textarea, button{
+    background-color: #dacbc2;
+}
+
+input[type="checkbox"]{
+    appearance: none;
+    -webkit-appearance: none;
+    width: 15px;
+    height: 15px;
+    border: 2px solid #8b8c89;
+    border-radius: 4px;
+    place-content: center;
+    cursor: pointer;
+    background-color: #dacbc2;
+    vertical-align: bottom;
+}
+
+input:hover, textarea:hover, input:focus, textarea:focus {
+    box-shadow: 2px 1px 5px black;
+}
+
+button, input:not(#query, #title, #content) {
+    background-color: #eeebe3;
+    box-shadow: 2px 1px 5px black;
+}
+
+button:hover, input:not(.searchbox, #title, #content):hover, button:focus, input:not(.searchbox, #title, #content):focus {
+    background-color: #d6cfcd;
+}
+
+input[type="checkbox"]:checked {
+    background-image: radial-gradient(circle, #000000 40%, transparent 45%);
+}
+
+input[type="checkbox"]:disabled{
+    background-image: radial-gradient(circle, #656562 40%, #8b8c89 45%);
+}
+
+#title{
+    width: 15vw;
+    height: 2vh;
+    min-height: 20px;
+    min-width: 100px;
+}
+
+a:not(.nav-button) {
+    color: #000000;
+    text-decoration: underline;
+}
+
+a:not(.nav-button, .mod-menu ul li a):hover, a:not(.nav-button, .mod-menu ul li a):focus {
+    font-weight: 700;
+}
+
+/* mobile ui stuff */
+.mobar {
+    display: none;
+}
+
+#search-menu {
+    display: none;
+    height: 6vh;
+    min-height: 57px;
+    margin: 0 -2px 4px -2px;
+    background-color: #dcddd6;
+    border: 2px solid #dcddd6;
+    border-bottom-color: #000000;
+}
+
+#burger a {
+    display: block;
+    margin-left: 8px;
+    margin-right: 100%;
+}
+#burger {
+    display: none;
+    margin: 0 -2px 4px -2px;
+    background-color: #dcddd6;
+    border: 2px solid #dcddd6;
+    border-bottom-color: #000000;
+}
+
+@media only screen and (max-width: 1257px) {
+    #main-nav, .searchbox:not(#mobox) {
+        display: none;
+    }
+
+    nav {
+        display: grid;
+        grid-template-columns: 70% 10% 15%;
+    }
+
+    .mobar {
+        display: block;
+        justify-self: end;
+        fill: black;
+        aspect-ratio: 1/1;
+        width: 7vw;
+        height: auto;
+        margin-bottom: 1vh;
+    }
+    .mobar img {
+        display: block;
+        aspect-ratio: 1/1;
+        width: 7vw;
+        height: auto;
+        border: 2px solid #000000;
+        border-radius: 5px;
+        background-color: yellow;
+    }
+    .mobar img:hover, .mobar img:focus{background-color: #364065}
+
+    button, input, a, .mobar img {
+        min-width: 43px;
+        min-height: 43px;
+    }
+
+    #latest-table tr {min-height: 49px;}
 }
 
 /* Custom Navbar */
+.imgnav {
+    max-height: 6vh;
+    max-width: 50vw;
+    min-height: 20px;
+    aspect-ratio: 11/2;
+    margin-right: 1%;
+    width: auto;
+    height: auto;
+}
+
+/* this ensures flex only applies when the screen is wide enough */
+@media only screen and (min-width: 1258px){nav{display: flex}}
 nav{
+    height: 10vh;
+    min-height: 50px;
+    justify-content: flex-start;
+    align-items: flex-end;
+    vertical-align: top;
     background-color: #C17FF0;
     border-bottom: 2px black solid;
 }
 
+
 nav .searchbox{
+    margin-right: 1%;
+    margin-bottom: 1%;
+    margin-left: auto;
     text-align: right;
 }
 
+.nav-button {
+    font-family: "IBM Plex Sans Devanagari", sans-serif;
+}
+
 #main-nav{
-    margin: 0%;
-    padding: 0%;
+    margin: 0;
+    padding: 0;
+    height: 50px;
     list-style-type: none;
     overflow: hidden;
 }
@@ -31,27 +215,46 @@ nav .searchbox{
 #main-nav li a{
     display: block;
     text-align: center;
-    padding: 10px 12px;
+    font-size: medium;
+    border-radius: 10px 10px 0 0;
+    width: 3em;
+    padding: 1em;
     margin: 2px;
+    margin-bottom: 0;
     text-decoration: none;
     border-top: 2px black solid;
     border-left: 2px black solid;
     border-right: 2px black solid;
-    color: darkblue;
+    color: #491c10;
     background-color: yellow;
 }
 
-#main-nav li a:hover{
-    color: yellow;
-    background-color: darkblue;
-    font-weight: bold;
+#main-nav li a:hover, #main-nav li a:focus{
+    margin-bottom: 0;
+    color: #eeebe3;
+    background-color: #364065;
+    font-family: "IBM Plex Sans BOLD", sans-serif;
+}
+
+
+/* background color */
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #eeebe3;
+}
+
+#page-content {
+    margin-left: 2vh;
+    margin-right: 2vh;
 }
 
 /* latest posts */
 #latest-table{
-    font-family: arial, sans-serif;
+    font-family: "Noto sans", sans-serif;
     border-collapse: collapse;
     width: 100%;
+    background-color: #eeebe3;
 }
 
 #latest-table td th{
@@ -61,13 +264,29 @@ nav .searchbox{
 }
 
 #latest-table tr:nth-child(even) {
-    background-color: #dddddd;
+    background-color: #dacbc2;
+}
+
+#latest-table tr:not(.info):hover, #latest-table tr:not(.info):focus {
+    position: relative;
+    z-index: 10;
+    box-shadow: 0 0 5px black;
 }
 
 /* login/signup */
 #error{
     display: block;
     background-color: red;
+    border: 2px black dashed;
+    width: fit-content;
+    padding: 10px;
+    margin: 2px;
+}
+
+/* help message */
+.help-panel{
+    display: block;
+    background-color: #f8f888;
     border: 2px black dashed;
     width: fit-content;
     padding: 10px;
@@ -81,8 +300,22 @@ nav .searchbox{
     overflow-wrap: break-word
 }
 
+#like {margin-top: 1vh;}
+
+.edit {
+    display: block;
+    margin-top: 1.5em;
+    margin-bottom: 1.5em;
+    padding: .5em;
+    max-width: 6em;
+    border: 2px black solid;
+    border-radius: 10px;
+    box-shadow: 2px 1px 5px black;
+}
+
 /* admin/moderator views */
 .mod-menu{
+    border-radius: 20px;
     margin: 0;
     padding: 8px;
     color: white;
@@ -90,6 +323,7 @@ nav .searchbox{
     font-family: monospace;
     border: 2px black ridge;
     width: fit-content;
+    box-shadow: 2px 1px 5px black;
 }
 
 .mod-menu ul{
@@ -101,9 +335,10 @@ nav .searchbox{
     padding: 10px;
     border: 1px solid black;
     background-color: lightgray;
+    border-radius: 10px;
 }
 
-.mod-menu ul li:hover{
+.mod-menu ul li:hover, .mod-menu ul li:focus{
     background-color: dimgray;
 }
 
@@ -113,7 +348,7 @@ nav .searchbox{
 }
 
 .property{
-    font-weight: bold;
+    font-weight: 700;
 }
 
 #post-images img {
@@ -121,4 +356,9 @@ nav .searchbox{
     max-height: 50vh;
     min-width: 10vw;
     min-height: 10vw;
+}
+
+.highlighted_comment{
+    background-color: #dacbc2;
+    border: 2px solid black;
 }

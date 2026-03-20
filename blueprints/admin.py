@@ -172,8 +172,8 @@ def user_punishment(username):
         if config.require_email:
             try:
                 mailer.send_user_email(search_user, EmailType.PUNISHMENT)
-            except RuntimeError as e:
-                current_app.logger.error(e)
+            except TypeError as e:
+                current_app.logger.error(f"Could not send email to {search_user.username}")
         log_punishment(local_user, search_user)
 
         return redirect(search_user.url)

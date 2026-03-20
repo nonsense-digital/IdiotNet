@@ -4,28 +4,37 @@
     <title>{% block title %}{% endblock %}</title>
     <link rel="stylesheet" href="/static/css/common.css">
     <link rel="icon" type="image/png" href="/static/favicon.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/static/js/menus.js"></script>
   </head>
   <body>
     <nav>
         <img src="/static/images/logo.png" alt="IdiotNet">
+        <a href="javascript:void(0);" class="mobar" onclick="openburger()">
+            <img alt="menu" src="/static/images/svg/menu_24dp_E3E3E3_FILL0_wght600_GRAD0_opsz24.svg">
+        </a>
+        <a href="javascript:void(0);" class="mobar" onclick="opensearch()">
+            <img alt="search" src="/static/images/svg/search_24dp_E3E3E3_FILL0_wght600_GRAD0_opsz24.svg">
+        </a>
+
         <ul id="main-nav">
         <li><a href="{{ routes['home'] }}">Home</a></li>
         <li><a href="{{ routes['latest'] }}">Latest</a></li>
         <li><a href="{{ routes['users'] }}">Users</a></li>
         <li><a href="{{ routes['about'] }}">About</a></li>
         {% if user %}
-            <li><a href="{{ routes['new_post'] }}">New Post</a></li>
+            <li><a href="{{ routes['new_post'] }}">New</a></li>
             <li><a href="{{ user.url }}">Profile</a></li>
             {% if user.role.value == "moderator" %}
-                <li><a href="{{ routes['admin_dashboard'] }}">Moderator</a></li>
+                <li><a class = "nav-button"  href="{{ routes['admin_dashboard'] }}">Mod</a></li>
             {% elif user.role.value == "admin" %}
-                <li><a href="{{ routes['admin_dashboard'] }}">Control Panel</a></li>
+                <li><a class = "nav-button"  href="{{ routes['admin_dashboard'] }}">Admin</a></li>
             {% endif %}
-            <li><a href="{{ routes['logout'] }}">Logout</a></li>
+            <li><a class = "nav-button"  href="{{ routes['logout'] }}">Logout</a></li>
         {% else %}
-            <li><a href="{{ routes['login'] }}">Login</a></li>
+            <li><a class = "nav-button"  href="{{ routes['login'] }}">Login</a></li>
             {% if g.config.allow_signup %}
-                <li><a href="{{ routes['signup'] }}">Signup</a></li>
+                <li><a class = "nav-button"  href="{{ routes['signup'] }}">Signup</a></li>
             {% endif %}
         {% endif %}
 
@@ -36,16 +45,52 @@
         </form>
 
     </nav>
-    {% if g.config.has_announcement_banner %}
-        <div id="error">
-            <span class="property">ANNOUNCEMENT: </span>
-            {{ g.config.announcement_banner|safe }}
-        </div>
-    {% endif %}
+
+    <!--This is for mobile ui menus-->
+    <div id="search-menu">
+        <form method="get" class="searchbox" action="{{ routes["search"] }}" id="mobox">
+            <label for="query">Search:</label> <input type="text" id="query" name="query" value="{{query}}" maxlength="50" />
+            <input type="submit" value="Search" />
+        </form>
+    </div>
+
+    <div id="burger">
+        <a href="{{ routes['home'] }}">Home</a>
+        <a href="{{ routes['latest'] }}">Latest</a>
+        <a href="{{ routes['users'] }}">Users</a>
+        <a href="{{ routes['about'] }}">About</a>
+        {% if user %}
+            <a href="{{ routes['new_post'] }}">New</a>
+            <a href="{{ user.url }}">Profile</a>
+        {% endif %}
+
+        {% if user %}
+            {% if user.role.value == "moderator" %}
+                <a href="{{ routes['admin_dashboard'] }}">Mod</a>
+            {% elif user.role.value == "admin" %}
+                <a href="{{ routes['admin_dashboard'] }}">Admin</a>
+            {% endif %}
+            <a href="{{ routes['logout'] }}">Logout</a>
+        {% else %}
+            <a href="{{ routes['login'] }}">Login</a>
+            {% if g.config.allow_signup %}
+                <a href="{{ routes['signup'] }}">Signup</a>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <div id = "page-content">
+        {% if g.config.has_announcement_banner %}
+            <div id="error">
+                <span class="property">ANNOUNCEMENT: </span>
+                {{ g.config.announcement_banner }}
+            </div>
+        {% endif %}
 
     {% block content %}{% endblock %}
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="/static/js/jquery-3.7.1.js" ></script>
     <script src="/static/js/common.js"></script>
+    <script src="/static/js/menus.js"></script>
     {% if post %}
         {% if post.title == "evil277&" %}
             <script src="/static/js/hacker.js"></script>
