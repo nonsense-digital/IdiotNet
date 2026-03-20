@@ -49,7 +49,7 @@ create table images
         constraint images_pk
             primary key,
     title         text default ''::text,
-    author        integer not null,
+    author        integer not null
 );
 
 -- ATTACHMENTS
