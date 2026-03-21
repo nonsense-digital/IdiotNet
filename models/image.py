@@ -7,7 +7,7 @@ import os
 
 ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'gif', 'png', 'webp']
 app = Flask(__name__)
-app.config['uploads'] = 'uploads'
+app.config['uploads'] = os.getenv('IMAGES_PATH')
 
 class Image:
     def __init__(self, image_id):
