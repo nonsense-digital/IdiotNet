@@ -6,7 +6,7 @@
     <h2><a href="{{ token.user.url }}"> {{ token.user.username }}</a> @
         <a href="{{routes["admin_client_punish"].format(token.client_ip) }}">{{ token.client_ip }}</a></h2>
     <p>By deleting this session, the user will be logged out.</p>
-    <form action="{{ request.url }}" id="punishment_form" method="post">
+    <form action="{{ request.path }}" id="punishment_form" method="post">
         <input id="submit" name="submit" type="submit" value="Delete">
     </form>
 {% endblock %}

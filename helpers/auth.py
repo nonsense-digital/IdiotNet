@@ -94,13 +94,16 @@ def check_password_hash(password_hash:str|bytes|memoryview, user_password: str) 
 # function that checks if a user has the required permissions
 # if not, abort with a 403 denied error
 def check_admin(local_user:User, admin_only=False):
-    match local_user.role:
-        case Role.ADMIN:
-            return
-        case Role.MODERATOR:
-            if admin_only:
+    if local_user:
+        match local_user.role:
+            case Role.ADMIN:
+                return
+            case Role.MODERATOR:
+                if admin_only:
+                    abort(403)
+            case Role.MEMBER:
                 abort(403)
-        case Role.MEMBER:
-            abort(403)
-        case _:
-            abort(403)
+            case _:
+                abort(403)
+    else:
+        abort(403)

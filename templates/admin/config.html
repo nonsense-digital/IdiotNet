@@ -3,7 +3,7 @@
 {% block title %}IdiotNet | Server Configuration{% endblock %}
 {% block content %}
     <h1>Change Server Configuration</h1>
-    <form action="{{ request.url }}" id="config_form" method="post">
+    <form action="{{ request.path }}" id="config_form" method="post">
         <label for="require_join_code">Require Join Code: </label>
                 <input id="require_join_code" name="require_join_code" type="checkbox" {% if config.join_code_required %}checked{% endif %}><br/>
             <label for="join_code">Join Code: </label>

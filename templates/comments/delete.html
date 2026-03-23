@@ -10,7 +10,7 @@
         <h3><span id="like-count">{{ comment.replies|length }}</span> Replies</h3>
         <p>Note: Because this is a root comment, all replies to this will be deleted.</p>
     {% endif %}
-    <form action="{{ request.url }}" id="punishment_form" method="post">
+    <form action="{{ request.path }}" id="punishment_form" method="post">
         <input id="submit" name="submit" type="submit" value="Delete">
     </form>
 {% endblock %}

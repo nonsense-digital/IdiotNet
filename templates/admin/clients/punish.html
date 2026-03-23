@@ -4,7 +4,7 @@
 {% block content %}
     <h1>Punish Client</h1>
     {% include 'admin/clients/client-info.html' %}
-    <form action="{{ request.url }}" id="punishment_form" method="post">
+    <form action="{{ request.path }}" id="punishment_form" method="post">
             <label for="punishment" id="punishment_label">Punishment: </label>
                 <select id="punishment" name="punishment">
                     {% for punishment in PunishmentType.__members__.values() %}

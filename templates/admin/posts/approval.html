@@ -4,7 +4,7 @@
 {% block content %}
     <h1>Approve/Deny Post "{{ post.title }}"</h1>
     {% include 'admin/posts/post-info.html' %}
-    <form action="{{ request.url }}" id="approve_form" method="post">
+    <form action="{{ request.path }}" id="approve_form" method="post">
         <label for="verdict">Verdict: </label>
         <select id="verdict" name="verdict">
             <option value="none" disabled selected>Select...</option>
