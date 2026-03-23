@@ -89,19 +89,20 @@ def before_request():
 
         # don't do the ban message if the user is already on ban (we don't want an infinite loop)
         if request.endpoint != 'errors.banned_message' and request.endpoint != 'users.logout':
-            # check for IP ban
-            if client.check_punishment() == PunishmentType.BAN:
-               return redirect("/banned")
-            # check for user ban
             if local_user:
-                if local_user.check_punishment() == PunishmentType.BAN or local_user.check_punishment() == PunishmentType.PERMABAN:
-                    return redirect("/banned")
-                # log out the user if they are unverified
-                if local_user.role == Role.UNVERIFIED:
-                    if config.require_email_verification:
-                        token.delete()
-                    else:
-                        local_user.role = Role.MEMBER
+                # check for IP ban
+                if client.check_punishment() == PunishmentType.BAN:
+                   return redirect("/banned")
+                # check for user ban
+                if local_user:
+                    if local_user.check_punishment() == PunishmentType.BAN or local_user.check_punishment() == PunishmentType.PERMABAN:
+                        return redirect("/banned")
+                    # log out the user if they are unverified
+                    if local_user.role == Role.UNVERIFIED:
+                        if config.require_email_verification:
+                            token.delete()
+                        else:
+                            local_user.role = Role.MEMBER
 
 
 

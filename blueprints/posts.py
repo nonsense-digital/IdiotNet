@@ -85,9 +85,8 @@ def new_post():
 def image(image_id):
     connection = get_db_connection()
     try:
-        ext = Image.read(connection, image_id).file_ext
-        filename = 'uploads/' + str(image_id) + "." + ext
-        return send_file(filename, mimetype='image/'+ext)
+        img = Image.read(connection, image_id)
+        return send_file(img.path, mimetype='image/'+img.file_ext)
     except NameError:
         abort(404, "Image not found")
     except IOError:

@@ -10,7 +10,7 @@
                 <p>{{ error_message }}</p>
             </div>
         {% endif %}
-        <form action="{{ request.url}}" method="POST">
+        <form action="{{ request.path}}" method="POST">
             <label for="title">Title:</label><input name="title" type="text" id="title" value="{{ post.title }}"><br>
             <textarea id="content" name="content" rows="5" cols="40" placeholder="Once upon a time...">{{ post.content }}</textarea><br/>
             <input class="submit" type="submit" value="Submit">

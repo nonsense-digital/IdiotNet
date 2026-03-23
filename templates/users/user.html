@@ -14,7 +14,7 @@
         <h2>About</h2>
         <pre id="about">{{ search_user.bio }}</pre>
         {% if user.username == search_user.username %}
-            <a href="{{ request.url + "\edit" }}">Edit...</a>
+            <a href="{{ request.path + "\edit" }}">Edit...</a>
             <a href="{{ routes["change_password"] }}">Change Password...</a>
             <a href="{{ routes["change_email"] }}">Change Email...</a>
         {% endif %}

@@ -16,7 +16,7 @@ class Client:
         self.__punishment_expiration__ = None
         self.__punishment_status__ = None
         self.__last_accessed__ = None
-        self.ip = ip
+        self.ip = ip.split(':')[0] # remove the port to prevent errors
         self.connection = connection
         try:
             self.update_values()

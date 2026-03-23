@@ -421,6 +421,8 @@ class User:
             self.__punishment_status__ = PunishmentType(data[7])
             self.__punishment_expiration__ = data[8]
             self.__punishment_reason__ = data[9]
+        else:
+            raise NameError("User does not exist")
 
     # --- USER-SPECIFIC METHODS ---
     # These are various user-specific actions one can perform.
