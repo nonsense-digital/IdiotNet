@@ -70,6 +70,11 @@ class Image:
     def file_ext(self):
         return self.__title__.rsplit('.', 1)[1].lower()
     @property
+    def path(self):
+        ext = self.file_ext
+        filename = os.path.join(app.config['uploads'], str(self.image_id) + '.' + ext)
+        return filename
+    @property
     def author(self):
         return self.__author__
 
