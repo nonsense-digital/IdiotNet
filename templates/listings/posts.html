@@ -1,5 +1,5 @@
 <table id="latest-table">
-    <tr><th>Title</th><th>Excerpt</th><th>Author</th><th>Date Posted</th><th>Likes</th><th>Comments</th></tr>
+    <tr class="info"><th>Title</th><th>Excerpt</th><th>Author</th><th>Date Posted</th><th>Likes</th><th>Comments</th></tr>
     {% for post in posts %}
         <tr>
             <td><a href="{{ routes["post"].format(post.post_id) }}" id="post-{{ post.post_id }}">{{ post.title[:12] }}</a></td>

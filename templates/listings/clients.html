@@ -1,5 +1,5 @@
 <table id="latest-table">
-    <tr><th>IP</th><th>Sessions</th><th>Punishment</th><th>Punishment Expiration</th><th>Punishment Reason</th></tr>
+    <tr class="info"><th>IP</th><th>Sessions</th><th>Punishment</th><th>Punishment Expiration</th><th>Punishment Reason</th></tr>
     {% for client in clients %}
         <tr>
             <td><a href="{{ routes["admin_client_punish"].format(client.ip) }}" >{{ client.ip }}</a></td>
