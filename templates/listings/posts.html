@@ -2,10 +2,10 @@
     <tr class="info"><th>Title</th><th>Excerpt</th><th>Author</th><th>Date Posted</th><th>Likes</th><th>Comments</th></tr>
     {% for post in posts %}
         <tr>
-            <td><a href="{{ routes["post"].format(post.post_id) }}" id="post-{{ post.post_id }}">{{ post.title[:12] }}</a></td>
-            <td>{{ post.content[:15] }}</td>
+            <td><a href="{{ routes["post"].format(post.post_id) }}" id="post-{{ post.post_id }}">{{ post.title[:25] }}</a></td>
+            <td>{{ post.content[:45] }}</td>
             <td><a href="{{ post.author.url }}">{{ post.author.username }}</a></td>
-            <td>{{ post.date_posted.strftime("%Y-%m-%d %H:%M:%S.%f") }}</td>
+            <td>{{ post.date_posted.strftime("%Y-%m-%d %H:%M") }}</td>
             <td>{{ post.likes_count }}</td>
             <td>{{ post.all_comments|length }}</td>
         </tr>
