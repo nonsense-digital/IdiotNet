@@ -24,7 +24,7 @@ class Client:
             # client hasn't been added yet, so add it now
             # and also get the data
             cursor = self.connection.cursor()
-            cursor.execute("INSERT INTO clients (ip_address) VALUES (%s)", (ip,))
+            cursor.execute("INSERT INTO clients (ip_address) VALUES (%s)", (self.ip,))
             connection.commit()
             cursor.close()
             self.update_values()
