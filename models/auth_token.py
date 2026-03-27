@@ -29,7 +29,7 @@ class Token:
         t = Token(user_id)
         t.connection = connection
         t.token_id = str(uuid.uuid4())
-        t.__client_ip__ = client_ip
+        t.__client_ip__ = client_ip.split(':')[0]
         t.__valid_until__ = datetime.now() + timedelta(days=7)
         cursor = connection.cursor()
         query = "INSERT INTO tokens (id, user_id, valid_until, client) VALUES (%s, %s, %s, %s)"
