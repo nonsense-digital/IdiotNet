@@ -1,5 +1,5 @@
 <table id="latest-table">
-    <tr><th>
+    <tr class="info"><th>
         {% if user_view %}
             IP
         {% else %}
@@ -18,7 +18,7 @@
                 {% endif %}
             </td>
             <td>{{ token.token_id }}</td>
-            <td>{{ token.valid_until.strftime("%Y-%m-%d %H:%M:%S.%f")}}</td>
+            <td>{{ token.valid_until.strftime("%Y-%m-%d %H:%M:%S")}}</td>
             <td><a href="{{ routes["admin_session_delete"].format(token.token_id) }}">Delete</a></td>
         </tr>
     {% endfor %}

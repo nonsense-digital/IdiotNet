@@ -1,5 +1,5 @@
 <table id="latest-table">
-    <tr>
+    <tr class="info">
         <th>ID</th>
         <th>Username</th>
         {% if is_admin_view %}<th>Email</th>{% endif %}
@@ -8,6 +8,7 @@
         <th>Liked Posts</th>
         <th>Comments</th>
         <th>Date Joined</th>
+        <th>Role</th>
         {% if is_admin_view %}
             {% if user.role.value == 'admin' %}<th>Sessions</th>{% endif %}
             <th>Punishment</th>
@@ -25,6 +26,7 @@
             <td>{{ search_user.liked_post_ids|length }}</td>
             <td>{{ search_user.comment_ids|length }}</td>
             <td>{{ search_user.date_created.strftime("%Y-%m-%d %H:%M:%S.%f") }}</td>
+            <td>{{ search_user.role.value.capitalize() }}</td>
             {% if is_admin_view %}
                 {% if user.role.value == 'admin' %}
                     <td><a href="{{ routes["admin_user_sessions"].format(search_user.username) }}">
