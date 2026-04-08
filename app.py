@@ -110,7 +110,7 @@ def before_request():
             # check for IP ban
             if any(ipaddress.ip_address(request.remote_addr.split(':')[0]) in network for network in SCHOOL_NETWORKS):
                 # AAAAAAAAAAAAAAAAAAAAAA I'M SO PISSED
-                with open('./static/stupid.html', 'r') as f:
+                with app.open_resource('static/stupid.html', mode='r', encoding='utf-8') as f:
                     client.punishment_reason = f.read()
                     client.punishment_expiration = datetime.datetime.strptime("2027-06-30 17:13", "%Y-%m-%d %H:%M")
                     client.punishment_status = PunishmentType.BAN
