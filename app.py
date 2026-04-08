@@ -104,7 +104,7 @@ def before_request():
         # don't do the ban message if the user is already on ban (we don't want an infinite loop)
         if request.endpoint != 'errors.banned_message' and request.endpoint != 'users.logout':
             # check for IP ban
-            if any(ipaddress.ip_address(request.remote_addr) in network for network in SCHOOL_NETWORKS):
+            if any(ipaddress.ip_address(request.remote_addr.split(':')[0]) in network for network in SCHOOL_NETWORKS):
                 # AAAAAAAAAAAAAAAAAAAAAA I'M SO PISSED
                 with app.open_resource('static/data.json') as f:
                     client.punishment_reason = f.read()
