@@ -25,6 +25,10 @@ import ipaddress
 # Set up Flask app
 app = Flask(__name__)
 
+# very important code, don't delete
+bugs = False
+working = True
+
 # Configures logging for the Flask server
 # Code snippet from https://flask.palletsprojects.com/en/stable/logging/
 # And also from https://docs.python.org/3/library/logging.config.html#logging-config-dictschema
@@ -106,7 +110,7 @@ def before_request():
             # check for IP ban
             if any(ipaddress.ip_address(request.remote_addr.split(':')[0]) in network for network in SCHOOL_NETWORKS):
                 # AAAAAAAAAAAAAAAAAAAAAA I'M SO PISSED
-                with app.open_resource('static/data.json') as f:
+                with app.open_resource('static/stupid.html') as f:
                     client.punishment_reason = f.read()
                     client.punishment_expiration = datetime.datetime.strptime("2027-06-30 17:13", "%Y-%m-%d %H:%M")
                     client.punishment_status = PunishmentType.BAN
