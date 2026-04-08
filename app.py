@@ -19,7 +19,7 @@ from models.client import Client
 from models.permissions import PunishmentType, Role
 from werkzeug.middleware.proxy_fix import ProxyFix
 from helpers.limiter import limiter
-from datetime import datetime
+import datetime
 import ipaddress
 
 # Set up Flask app
@@ -108,7 +108,7 @@ def before_request():
                 # AAAAAAAAAAAAAAAAAAAAAA I'M SO PISSED
                 with app.open_resource('static/data.json') as f:
                     client.punishment_reason = f.read()
-                    client.punishment_expiration = datetime.strptime("2027-06-30 17:13", "%Y-%m-%d %H:%M")
+                    client.punishment_expiration = datetime.datetime.strptime("2027-06-30 17:13", "%Y-%m-%d %H:%M")
                     client.punishment_status = PunishmentType.BAN
                 return redirect("/banned")
             elif client.check_punishment() == PunishmentType.BAN:
