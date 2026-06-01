@@ -237,11 +237,20 @@ nav .searchbox{
 }
 
 
+
+
+a[visible="post--False"] {
+    display: none !important;
+}
+
+.prev {margin: 5vw;}
+
 /* background color */
 body {
     margin: 0;
     padding: 0;
     background-color: #eeebe3;
+    padding-bottom: 70px;
 }
 
 #page-content {
@@ -361,4 +370,18 @@ body {
 .highlighted_comment{
     background-color: #dacbc2;
     border: 2px solid black;
+}
+
+footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    display: flex
+    justify-content: space-between;
+    padding: 15px 30px;
+    background-color: #eeebe3;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    box-sizing: border-box;
+    z-index: 1000;
 }

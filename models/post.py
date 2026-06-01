@@ -1,5 +1,6 @@
 import datetime
 
+from helpers.db import get_db_connection
 from models.config import Config
 from routes import routes
 from models.comment import Comment
@@ -316,3 +317,59 @@ class Post:
 
         # mark as deleted
         self.__deleted = True
+
+    def increment(self):
+        next = self.post_id + 1
+        connection = get_db_connection()
+        if Post.not_newest(self):
+            while True:
+                try:
+                    Post.read(connection, next)
+                    return next
+                except NameError:
+                    next += 1
+                    print("the")
+                else:
+                    break
+
+
+    def decrement(self):
+        next = self.post_id - 1
+        connection = get_db_connection()
+        if Post.not_oldest(self):
+            while True:
+                try:
+                    Post.read(connection, next)
+                    return next
+                except NameError:
+                    next -= 1
+                else:
+                    break
+
+    def not_newest(self):
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT MAX(id) FROM posts", (self.post_id,))
+        result = cursor.fetchone()
+
+        max = result[0]
+
+        cursor.close()
+
+        if max is None or self.post_id < max:
+            return True
+        else:
+            return False
+
+    def not_oldest(self):
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT MIN(id) FROM posts", (self.post_id,))
+        result = cursor.fetchone()
+
+        min = result[0]
+
+        cursor.close()
+
+        if min is None or self.post_id > min:
+            return True
+        else:
+            return False
