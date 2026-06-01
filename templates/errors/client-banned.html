@@ -7,7 +7,7 @@
         {% if client.punishment_status.value == "ban" %} temporarily banned
         {% else %} NOT banned (why are you here) {% endif %}
         due to a violation of idiotnet rules. </p>
-    <span class="property">Reason: </span><span>{{ client.punishment_reason }}</span><br/>
+    <span class="property">Reason: </span><span>{{ client.punishment_reason|safe }}</span><br/>
     {% if client.punishment_status.value == "ban" %}
     <span class="property">Banned until: </span><span>{{ client.punishment_expiration.strftime("%A, %B %d, %Y %H:%M") }}</span><br/>
     {% else %}

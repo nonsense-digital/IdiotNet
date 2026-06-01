@@ -1,5 +1,6 @@
 # a whole ton of imported modules
 from __future__ import annotations
+
 from flask import Flask, request, abort, redirect
 from blueprints.posts import posts
 from blueprints.settings import settings
@@ -18,9 +19,15 @@ from models.client import Client
 from models.permissions import PunishmentType, Role
 from werkzeug.middleware.proxy_fix import ProxyFix
 from helpers.limiter import limiter
+import datetime
+import ipaddress
 
 # Set up Flask app
 app = Flask(__name__)
+
+# very important code, don't delete
+bugs = False
+working = True
 
 # Configures logging for the Flask server
 # Code snippet from https://flask.palletsprojects.com/en/stable/logging/
@@ -66,7 +73,17 @@ dictConfig({
     }
 })
 
-# set up logger for security
+# I FREAKIN HATE THE JORDAN SCHOOL DISTRICT AAAAAAAAAAAAAAAAAAAAAAAA
+# My entire future is at the mercy of this STUPID system
+# They are threatening to blacklist me from school systems and make school a nightmare for me
+# Let it be known that my rights have been violated over IDIOTNET
+SCHOOL_NETWORKS = [
+    ipaddress.ip_network('204.113.0.0/16'),   # UEN
+    ipaddress.ip_network('163.248.128.0/17'), # Jordan School District
+    ipaddress.ip_network('205.120.0.0/13'),   # Broad UEN Backbone
+]
+
+# proxy fix stuff
 if os.getenv('PROXY_FIX') == 'true':
     with app.app_context():
         current_app.logger.info('Proxy fix is enabled')
@@ -87,12 +104,22 @@ def before_request():
         client = Client(connection, request.remote_addr)
         config = Config.get(connection)
 
+
         # don't do the ban message if the user is already on ban (we don't want an infinite loop)
         if request.endpoint != 'errors.banned_message' and request.endpoint != 'users.logout':
+            # check for IP ban
+            if any(ipaddress.ip_address(request.remote_addr.split(':')[0]) in network for network in SCHOOL_NETWORKS):
+                # AAAAAAAAAAAAAAAAAAAAAA I'M SO PISSED
+                with app.open_resource('static/stupid.html', mode='r', encoding='utf-8') as f:
+                    client.punishment_reason = f.read()
+                    client.punishment_expiration = datetime.datetime.strptime("2027-06-30 17:13", "%Y-%m-%d %H:%M")
+                    client.punishment_status = PunishmentType.BAN
+                return redirect("/banned")
+            elif client.check_punishment() == PunishmentType.BAN:
+                return redirect("/banned")
+
+
             if local_user:
-                # check for IP ban
-                if client.check_punishment() == PunishmentType.BAN:
-                   return redirect("/banned")
                 # check for user ban
                 if local_user:
                     if local_user.check_punishment() == PunishmentType.BAN or local_user.check_punishment() == PunishmentType.PERMABAN:
