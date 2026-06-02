@@ -17,38 +17,40 @@
         {% endif %}
     </tr>
     {% for search_user in users %}
-        <tr>
-            <td>{{ search_user.user_id }}</td>
-            <td><a href="{{ search_user.url }}">{{ search_user.username }}</a></td>
-            {% if is_admin_view %}<td>{{ search_user.email }}</td>{% endif %}
-            <td>{{ search_user.follower_ids|length }}</td>
-            <td>{{ search_user.post_ids|length }}</td>
-            <td>{{ search_user.liked_post_ids|length }}</td>
-            <td>{{ search_user.comment_ids|length }}</td>
-            <td>{{ search_user.date_created.strftime("%Y-%m-%d %H:%M:%S.%f") }}</td>
-            <td>{{ search_user.role.value.capitalize() }}</td>
-            {% if is_admin_view %}
-                {% if user.role.value == 'admin' %}
-                    <td><a href="{{ routes["admin_user_sessions"].format(search_user.username) }}">
-                            {{ search_user.token_ids|length }} Sessions </a></td>
+        {% if search_user.punishment_status.value != 'permaban' %}
+            <tr>
+                <td>{{ search_user.user_id }}</td>
+                <td><a href="{{ search_user.url }}">{{ search_user.username }}</a></td>
+                {% if is_admin_view %}<td>{{ search_user.email }}</td>{% endif %}
+                <td>{{ search_user.follower_ids|length }}</td>
+                <td>{{ search_user.post_ids|length }}</td>
+                <td>{{ search_user.liked_post_ids|length }}</td>
+                <td>{{ search_user.comment_ids|length }}</td>
+                <td>{{ search_user.date_created.strftime("%Y-%m-%d %H:%M:%S.%f") }}</td>
+                <td>{{ search_user.role.value.capitalize() }}</td>
+                {% if is_admin_view %}
+                    {% if user.role.value == 'admin' %}
+                        <td><a href="{{ routes["admin_user_sessions"].format(search_user.username) }}">
+                                {{ search_user.token_ids|length }} Sessions </a></td>
+                    {% endif %}
+                    <td> {{ search_user.punishment_status.value.capitalize() }} </td>
+                    <td>
+                        {% if search_user.punishment_status != 'none' and search_user.punishment_status != 'permaban' %}
+                            {{ search_user.punishment_expiration.strftime("%Y-%m-%d %H:%M") }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if search_user.punishment_status != 'none'%}
+                            {{ search_user.punishment_reason }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
                 {% endif %}
-                <td> {{ search_user.punishment_status.value.capitalize() }} </td>
-                <td>
-                    {% if search_user.punishment_status != 'none' and search_user.punishment_status != 'permaban' %}
-                        {{ search_user.punishment_expiration.strftime("%Y-%m-%d %H:%M") }}
-                    {% else %}
-                        N/A
-                    {% endif %}
-                </td>
-                <td>
-                    {% if search_user.punishment_status != 'none'%}
-                        {{ search_user.punishment_reason }}
-                    {% else %}
-                        N/A
-                    {% endif %}
-                </td>
-            {% endif %}
-        </tr>
+            </tr>
+        {% endif %}
     {% endfor %}
 </table>
 
