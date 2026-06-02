@@ -7,7 +7,6 @@ import os
 
 ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'gif', 'png', 'webp']
 app = Flask(__name__)
-app.config['uploads'] = os.getenv('IMAGES_PATH')
 
 class Image:
     def __init__(self, image_id):
@@ -28,7 +27,7 @@ class Image:
             cursor.execute(query, data)
             connection.commit()
             id = cursor.fetchone()[0]
-            file.save(os.path.join(app.config['uploads'], str(id) + '.' + extension))
+            file.save(os.path.join(os.getenv('IMAGES_PATH'), str(id) + '.' + extension))
         else:
             raise ValueError("Invalid file type")
 
@@ -72,7 +71,7 @@ class Image:
     @property
     def path(self):
         ext = self.file_ext
-        filename = os.path.join(app.config['uploads'], str(self.image_id) + '.' + ext)
+        filename = os.path.join(os.getenv('IMAGES_PATH'), str(self.image_id) + '.' + ext)
         return filename
     @property
     def author(self):
