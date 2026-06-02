@@ -4,13 +4,9 @@
 {% block content %}
     <h1>Approve/Deny Post "{{ post.title }}"</h1>
     {% include 'admin/posts/post-info.html' %}
-    <form action="{{ request.path }}" id="approve_form" method="post">
-        <label for="verdict">Verdict: </label>
-        <select id="verdict" name="verdict">
-            <option value="none" disabled selected>Select...</option>
-            <option value="approve">Approve</option>
-            <option value="deny">Deny</option>
-        </select>
+    <form action="{{ request.path }}" id="confirm_form" method="post">
+
+
         <br/>
         <input id="submit" name="submit" type="submit" value="Confirm">
     </form>

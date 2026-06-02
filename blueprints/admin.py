@@ -1,3 +1,4 @@
+import enum
 from smtplib import SMTPDataError
 
 from flask import Blueprint, render_template, abort, request, redirect, make_response
@@ -11,7 +12,7 @@ from helpers.mailer import EmailType
 from models.client import Client
 from models.comment import Comment
 from models.config import Config
-from models.post import Post
+from models.post import Post, BulkDeleteMethod
 from models.user import User, check_username, check_password
 from models.permissions import Role, PunishmentType
 from routes import routes
@@ -387,3 +388,22 @@ def session_delete(token_id):
         current_app.logger.info(f"[IP {request.remote_addr}] logged out {token.user.username} on token {token_id}")
         token.delete()
         return redirect(search_user.url)
+
+# bulk delete posts
+@admin.route(routes["admin_post_bulk_delete"], methods=["GET", "POST"])
+def post_bulk_delete():
+    connection = get_db_connection()
+    local_user = get_authenticated_user(connection, request.cookies)
+    check_admin(local_user)
+
+    if request.method == "GET":
+        return render_template("admin/posts/bulk-delete.html", user=local_user)
+    else:
+        method = request.form.get('method')
+        if method == 'none':
+            return render_template("admin/posts/bulk-delete.html", user=local_user)
+        else:
+            method = BulkDeleteMethod(method)
+            match method:
+                case
+            return redirect(routes["admin_dashboard"])

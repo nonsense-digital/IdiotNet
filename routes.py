@@ -38,6 +38,7 @@ routes = {
     "admin_post_approval": "/admin/posts/{}/approval",
     "comment_delete": "/comments/{}/delete",
     "admin_session_delete": "/admin/sessions/{}/delete",
+    "admin_post_bulk_delete": "/admin/posts/bulk-delete"
 }
 
 # all urls for API endpoints that users do not directly interact with

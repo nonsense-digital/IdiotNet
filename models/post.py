@@ -15,6 +15,10 @@ class SortMethod(Enum):
     RELEVANT = 3
     LIKED = 4
 
+class BulkDeleteMethod(Enum):
+    ID_RANGE = "range"
+    USER_POSTS = "user"
+
 # make sure a post title is not empty (excluding spaces)
 def check_empty(text:str):
     withoutSpaces = ""
@@ -125,6 +129,9 @@ class Post:
             p = Post.read(connection, result[0])
             posts.append(p)
         return posts
+
+    @staticmethod
+    def bulk_delete(connection, method:BulkDeleteMethod, ):
 
     # --- GETTERS AND SETTERS ----
     # When a Post object's atomic properties (title, content, date posted, etc.) are called, a getter function retrieves them from its private field.
