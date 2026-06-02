@@ -45,6 +45,11 @@
     {% else %}
         <h1>This post is currently private.</h1>
     {% endif %}
+
+    <footer>
+        <a href="{{ routes["post"].format(post.increment()) }}" class="next" visible="post--{{ post.not_newest() }}">&lt Next</a>
+        <a href="{{ routes["post"].format(post.decrement()) }}" class="prev" visible="post--{{ post.not_oldest() }}">Previous &gt</a>
+    </footer>
 {% endblock %}
 {% block extra_js %}
     <script src="/static/js/comments.js" ></script>

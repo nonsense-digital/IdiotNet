@@ -2,7 +2,7 @@
     {% if user %}
         {% if user.punishment_status.value != "mute" %}
             <li>Post comment: <form action="{{ API["comment_post"].format(post.post_id) }}" method="POST">
-                <input id="content" name="content" placeholder="Hey.....">
+                <input id="content" name="content" placeholder="Hey...">
                 <input type="submit" value="Submit">
             </form></li>
         {% else %}
@@ -35,7 +35,7 @@
                                 <summary>Reply...</summary>
 
                                     <form action="{{ API["reply_comment"].format(comment.comment_id) }}" method="POST">
-                                        <input id="content" name="content" placeholder="Hey.....">
+                                        <input id="content" name="content" placeholder="Hey...">
                                         <input class="submit" type="submit" value="Submit">
                                     </form>
 
