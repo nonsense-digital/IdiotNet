@@ -17,7 +17,7 @@
         {% endif %}
     </tr>
     {% for search_user in users %}
-        {% if search_user.punishment_status.value != 'permaban' %}
+        {% if search_user.punishment_status.value != 'permaban' or is_admin_view %}
             <tr>
                 <td>{{ search_user.user_id }}</td>
                 <td><a href="{{ search_user.url }}">{{ search_user.username }}</a></td>
