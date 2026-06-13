@@ -13,6 +13,7 @@ class SearchType(Enum):
     QUERY = 3
     PUNISHED_ENTITIES = 4
     UNAPPROVED_POSTS = 5
+    NON_PERMABANNED_USERS = 6
 
 '''    if search_user is None:
         posts = Post.latest(connection, count, offset*count, SortMethod.LATEST)
@@ -77,6 +78,8 @@ def search_users(count:int, offset:int=0, search_type:SearchType=SearchType.ALL,
             users = User.punished(connection, count, offset * count)
         case SearchType.QUERY:
             raise NotImplementedError("Search type not implemented yet.")
+        case SearchType.NON_PERMABANNED_USERS:
+            users = User.non_permabanned(connection, count, offset * count)
         case _:
             raise TypeError("Invalid search type")
     return users

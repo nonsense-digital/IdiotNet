@@ -115,7 +115,7 @@ def user_list():
         page = 1
     else:
         page = int(page)
-    users, is_last_page = paged_users(page, search_type=SearchType.ALL)
+    users, is_last_page = paged_users(page, search_type=SearchType.NON_PERMABANNED_USERS)
     return render_template('admin/users/users.html', routes=routes, user=local_user, users=users,
                            is_last_page=is_last_page, page=page, is_admin_view=False)
 

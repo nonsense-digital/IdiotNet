@@ -126,6 +126,19 @@ class User:
             clients.append(p)
         return clients
 
+    # finds a list of all users, excluding permabanned, sorted by date created
+    @staticmethod
+    def non_permabanned(connection, count: int, offset: int = 0):
+        cursor = connection.cursor()
+        query = "SELECT id FROM users WHERE punishment_status != 'permaban' ORDER BY date_created DESC OFFSET %s LIMIT %s"
+        cursor.execute(query, (offset, count))
+        data = cursor.fetchall()
+        clients = []
+        for record in data:
+            p = User.read(connection, record[0])
+            clients.append(p)
+        return clients
+
     # finds a list of all punished users, sorted by punishment expiration
     @staticmethod
     def punished(connection, count: int, offset: int = 0):
