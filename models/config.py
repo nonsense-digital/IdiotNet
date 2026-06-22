@@ -1,7 +1,7 @@
 import datetime
 from flask import g
 
-from helpers.misc import nullPack
+from helpers.misc import null_pack
 from routes import routes
 from models.permissions import Role, PunishmentType
 

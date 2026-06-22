@@ -3,27 +3,27 @@
 {% block title %}IdiotNet | Bulk Delete Posts{% endblock %}
 {% block content %}
     <h1>Bulk Delete Posts</h1>
-    {% include 'admin/posts/post-info.html' %}
-    <form action="{{ request.path }}" id="bulk_delete_form" method="post">
-        <label for="delete_method">Delete Method: </label>
-        <select id="delete_method" name="delete_method">
-            <option value="none" disabled selected>Select...</option>
-            <option value="range">ID Range</option>
-            <option value="user">User Posts</option>
-        </select>
+    <h2>WARNING: Bulk deletion is irreversible and dangerous if used incorrectly</h2>
+    {% if error_message %}
+            <div id="error">
+                <h3>Error</h3>
+                <p>{{ error_message }}</p>
+            </div>
+    {% endif %}
+    <form action="{{ request.path }}" id="bulk_delete_post_form" method="post">
         <div id="range_options">
-            <label for="min" hidden>From: </label>
-            <input type="number" name="min" id="min" disabled hidden><br/>
-            <label for="max" hidden>To: </label>
-            <input type="number" name="max" id="max" disabled hidden><br/>
-            <label for="range_exclude" hidden>Exclude Post IDs (comma seperated): </label>
-            <input type="text" name="exclude" id="range_exclude" disabled hidden><br/>
-        </div>
-        <div id="user_options">
-            <label for="user" hidden>User ID: </label>
-            <input type="number" id="user" name="user" disabled hidden><br/>
-            <label for="user_exclude" hidden>Exclude Post IDs (comma seperated): </label>
-            <input type="text" name="exclude" id="user_exclude" disabled hidden><br/>
+            <label for="query">Post ID Ranges: </label>
+            <input type="text" name="query" id="query"><br/>
+            <details>
+                <summary>Help on ranges</summary>
+                <p>Ranges can be single page numbers, separated by commas, or ranges using dashes. <br/>
+                For example, the following would be valid ranges: <br/></p>
+                <ul>
+                    <li>1</li>
+                    <li>2-7</li>
+                    <li>2-7,11-17,23,34-90</li>
+                </ul>
+            </details>
         </div>
         <br/>
         <input id="submit" name="submit" type="submit" value="Confirm">

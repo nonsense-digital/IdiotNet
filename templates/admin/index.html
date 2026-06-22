@@ -41,6 +41,8 @@
 
         {% if user.role.value == 'admin' %}
             <a href="{{ routes["admin_config"] }}">Change Configuration...</a>
+            <h3>Danger Zone</h3>
+            <a href="{{ routes["admin_post_bulk_delete"] }}">Bulk delete posts...</a>
         {% endif %}
     {% endif %}
 {% endblock %}
