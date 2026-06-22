@@ -1,3 +1,4 @@
+import enum
 from smtplib import SMTPDataError
 
 from flask import Blueprint, render_template, abort, request, redirect, make_response
@@ -11,7 +12,7 @@ from helpers.mailer import EmailType
 from models.client import Client
 from models.comment import Comment
 from models.config import Config
-from models.post import Post
+from models.post import Post, BulkDeleteMethod
 from models.user import User, check_username, check_password
 from models.permissions import Role, PunishmentType
 from routes import routes
@@ -384,6 +385,29 @@ def session_delete(token_id):
     else:
         # delete the token / log out the user
         search_user = token.user
-        current_app.logger.info(f"[IP {request.remote_addr}] logged out {token.user.username} on token {token_id}")
+        current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} logged out {token.user.username} on token {token_id}")
         token.delete()
         return redirect(search_user.url)
+
+# bulk delete posts
+@admin.route(routes["admin_post_bulk_delete"], methods=["GET", "POST"])
+def post_bulk_delete():
+    connection = get_db_connection()
+    local_user = get_authenticated_user(connection, request.cookies)
+    check_admin(local_user, admin_only=True)
+
+    if request.method == "GET":
+        return render_template("admin/posts/bulk-delete.html", routes=routes, user=local_user)
+    else:
+        # make sure the query exists
+        if "query" in request.form:
+            try:
+                # attempt to delete all posts within the range
+                query = request.form.get('query')
+                Post.bulk_query_delete(connection, query)
+                current_app.logger.info(
+                    f'[IP {request.remote_addr}] {local_user.username} bulked deleted posts {query}')
+                return redirect(routes["admin_dashboard"])
+            except ValueError as e: # make sure the query is valid
+                return render_template("admin/posts/bulk-delete.html", routes=routes, user=local_user, error_message=e)
+

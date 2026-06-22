@@ -1,5 +1,6 @@
 import datetime
 
+from helpers import misc
 from helpers.db import get_db_connection
 from models.config import Config
 from routes import routes
@@ -14,6 +15,10 @@ class SortMethod(Enum):
     POPULAR = 2
     RELEVANT = 3
     LIKED = 4
+
+class BulkDeleteMethod(Enum):
+    ID_RANGE = "range"
+    USER_POSTS = "user"
 
 # make sure a post title is not empty (excluding spaces)
 def check_empty(text:str):
@@ -125,6 +130,26 @@ class Post:
             p = Post.read(connection, result[0])
             posts.append(p)
         return posts
+
+    # delete a range of posts based on a string-format query
+    @staticmethod
+    def bulk_query_delete(connection, query:str):
+        cursor = connection.cursor()
+
+        # get the list of posts, based on query
+        post_ids = []
+        try:
+            post_ids = misc.get_num_range(query)
+        except ValueError:
+            raise ValueError("Invalid bulk delete query")
+
+        # attempt to read each post's data and delete it
+        for post_id in post_ids:
+            try:
+                post = Post.read(connection, post_id)
+                post.delete()
+            except NameError:
+                pass # ignore if the post has already been deleted, and just move on
 
     # --- GETTERS AND SETTERS ----
     # When a Post object's atomic properties (title, content, date posted, etc.) are called, a getter function retrieves them from its private field.

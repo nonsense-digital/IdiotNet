@@ -111,7 +111,7 @@ create table users
     role                  role           default 'member'::role                                     not null,
     punishment_status     punishmenttype default 'none'::punishmenttype                             not null,
     punishment_expiration timestamp      default '1914-06-28 10:45:00'::timestamp without time zone not null,
-    punishment_reason     varchar(255)   default ''::character varying,
+    punishment_reason     text   default ''::text,
     constraint users_pk
         primary key (id, username)
 );
@@ -156,7 +156,7 @@ create table clients
     last_accessed         timestamp,
     punishment_status     punishmenttype default 'none'::punishmenttype,
     punishment_expiration timestamp      default now(),
-    punishment_reason     varchar(50)    default ''::character varying
+    punishment_reason     text    default ''::text
 );
 
 -- FOLLOWS
