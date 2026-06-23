@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import datetime
+
+from models import notification
+from models.notification import MessageType
 from models.post import Post
 from routes import routes
 from enum import Enum
@@ -75,6 +78,7 @@ class User:
 
             # create a user object from the data
             u = User(cursor.fetchone()[0])
+            u.connection = connection
             u.__username__ = username
             u.__email__ = email
             u.__date_created__ = date_created
@@ -83,7 +87,7 @@ class User:
             u.__role__ = Role.MEMBER
             u.__punishment_status__ = PunishmentType.NONE
             u.__punishment_expiration__ = None
-            u.connection = connection
+            u.default_notification_preferences()
             cursor.close()
             return u
         else:
@@ -418,6 +422,42 @@ class User:
         cursor.execute("SELECT id FROM tokens WHERE user_id = %s", (self.user_id,))
         return [x[0] for x in cursor.fetchall()]
 
+    # method that sets a notification preference for a user
+    def set_notification_preference(self, message_type:MessageType, enabled:bool, replace:bool=True):
+        cursor = self.connection.cursor()
+        if replace: # run UPDATE because the record already exists
+            cursor.execute("UPDATE notification_preferences SET enabled = %s WHERE user_id = %s AND message_type = %s", (enabled, self.user_id, message_type.value))
+        else: # run INSERT because the record doesn't exist yet
+            cursor.execute("INSERT INTO notification_preferences VALUES (%s, %s, %s)", (self.user_id, message_type.value, enabled))
+        self.connection.commit()
+        cursor.close()
+
+    # method that gets a notification preference for a user
+    def get_notification_preference(self, message_type:MessageType):
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT enabled FROM notification_preferences WHERE user_id = %s AND message_type = %s", (self.user_id,message_type.value))
+        results = cursor.fetchone()
+        cursor.close()
+        if results is not None: # return result if it exists in the table
+            return results[0]
+        else: # return default of true because record doesn't exist
+            return True
+
+    # method that returns a dictionary, containing all notification preferences
+    @property
+    def notification_preferences(self):
+        results_dict = {}
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT message_type, enabled FROM notification_preferences WHERE user_id = %s", (self.user_id,))
+        results = cursor.fetchall()
+        cursor.close()
+        for col in results: # get resulting columns
+            results_dict[col[0]] = col[1]
+        not_included = [message_type for message_type in MessageType if message_type.value not in results_dict.keys()]
+        for message_type in not_included: # also add all missed message types as the default
+            results_dict[message_type.value] = True
+        return results_dict
+
     # Updates the atomic values stored in the User
     def update_values(self) -> None:
         cursor = self.connection.cursor()
@@ -465,6 +505,13 @@ class User:
         # remove all comments
         for comment in self.comments:
             comment.delete()
+
+    # fill out notification preferences with defaults, where everything is set as true
+    def default_notification_preferences(self):
+        cursor = self.connection.cursor()
+        for message_type in notification.MessageType:
+            self.set_notification_preference(message_type, True)
+        cursor.close()
 
     # check if the user has an active punishment
     def check_punishment(self, refresh:bool=False) -> PunishmentType:

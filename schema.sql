@@ -25,6 +25,17 @@ create type role as enum ('member', 'moderator', 'admin');
 -- Permaban = user is permanently removed from the website and all data is erased
 create type punishmenttype as enum ('none', 'mute', 'ban', 'permaban');
 
+-- NOTIFICATION MESSAGE TYPES
+-- Follow = a user has followed you
+-- Like = a user has liked your post
+-- Post comment = a user has commented on your post
+-- Comment reply = a user has replied to your comment
+-- Watched post = there are new comments or edits on a post you are watching
+-- Mention = somebody @mentioned you in a post or comment.
+-- Admin = an administrative action has been taken against you
+-- Custom = idk why not
+create type message_type as enum ('follow', 'like', 'post_comment', 'comment_reply', 'watched_post', 'mention', 'admin', 'custom');
+
 -- COMMENTS
 -- Text-only, single-line blurbs that users can add to any post
 -- Comments can also be replies to other comments, creating "threads" of comments
@@ -193,4 +204,39 @@ create table verify
     user_id     integer     not null,
     valid_until timestamp   not null,
     email       varchar(60) not null
+);
+
+-- NOTIFICATIONS
+-- Private messages that only the recipient can see
+-- Can be customized based on notification type in user settings
+create table notifications
+(
+    id           integer generated always as identity (minvalue 0),
+    message_type message_type default 'custom'::message_type               not null,
+    message      varchar(255) default 'idiotic message'::character varying not null,
+    user_id      integer                                                   not null,
+    date_sent    timestamp                                                 not null
+
+);
+
+-- WATCHES
+-- A relation between a user and post, creating a "watch"
+-- This means the user will be notified of any post changes or activity
+create table watches
+(
+    id      integer generated always as identity (minvalue 0),
+    post_id integer not null,
+    user_id integer not null
+);
+
+-- NOTIFICATION PREFERENCES
+-- Defaults to true for each category
+-- One record per category per user
+create table notification_preferences
+(
+    user_id      integer not null,
+    message_type message_type not null,
+    enabled      boolean not null,
+    constraint notification_preferences_pk
+        primary key (user_id, message_type)
 );
