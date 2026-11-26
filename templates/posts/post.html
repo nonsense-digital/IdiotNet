@@ -21,10 +21,13 @@
         {% endif %}
         <h3><span id="like-count">{{ post.likes_count }}</span> Likes </h3>
         {% if user %}
-            <button id="like" data-id="{{ post.post_id }}" data-like="{{ not user.is_liked(post.post_id) }}"></button><br/>
+            <button id="like" data-id="{{ post.post_id }}" data-like="{{ not user.is_liked(post.post_id) }}"></button>
             {% if user.user_id == post.author.user_id %}
+                <br/>
                 <a href="{{ routes["post_edit"].format(post.post_id) }}">Edit...</a>
                 <a href="{{ routes["post_delete"].format(post.post_id) }}">Delete...</a>
+            {% else %}
+                <button id="watch" data-id="{{ post.post_id }}" data-watch="{{ not user.is_watched(post.post_id) }}"></button><br/>
             {% endif %}
         {% endif %}
         <div id="post-content">{{ post.content }}</div>

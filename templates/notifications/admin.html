@@ -1,2 +1,17 @@
-You have been muted for breaking IdiotNet rules. You cannot post or comment until {{ target.punishment_expiration.strftime("%Y-%m-%d %H:%M") }}}}. <br/>
-Reason: {{target.punishment_reason}}
+{ % if title % }
+    Your post "
+    {% if approved %}
+        <a href="{{url}}">{{title}}</a>" has been approved.
+    {% else %}
+        {{title}}" has been rejected.
+    {% endif %}"
+{% elif role %}
+    Your role has been changed to {{ role }}.
+{% elif is_mute %}
+    You have been muted for breaking IdiotNet rules. You cannot post or comment until {{ target.punishment_expiration.strftime("%Y-%m-%d %H:%M") }}. <br/>
+    Reason: {{target.punishment_reason}}
+{% elif censor_type == 'bio' %}
+    Your bio has been removed due to violations of IdiotNet rules.
+{% else %}
+    The following {{censor_type}} has been removed due to violations of IdiotNet rules: {{censored}}
+{% endif %}

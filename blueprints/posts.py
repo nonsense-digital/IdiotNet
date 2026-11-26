@@ -1,9 +1,11 @@
 import json
 
 from flask import Blueprint, render_template, abort, request, redirect, send_file
+from helpers import notifier
 from helpers.auth import *
 from helpers.db import *
 from helpers.listings import paged_posts, SearchType
+from helpers.notifier import mention, watched_post
 from models.client import Client
 from models.comment import Comment
 from models.permissions import PunishmentType, Role
@@ -75,6 +77,9 @@ def new_post():
                 for image_id in image_ids:
                     i = Image.read(connection, image_id)
                     i.create_attachment(staged_post.post_id)
+
+                with notifier.app_queue.open():
+                    mention.defer(mentioner_id=local_user.user_id, mention_id=staged_post.post_id, is_comment=False) # check for mentions and notify the mentioned
                 current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} created post {staged_post.post_id}")
                 return redirect(staged_post.url)
             else:
@@ -123,6 +128,9 @@ def edit_post(post_id):
                     read_post.content = content
                     read_post.date_modified = datetime.datetime.now()
                     current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} edited post {read_post.post_id}")
+                    with notifier.app_queue.open():
+                        watched_post.defer(watched_id=read_post.post_id)  # notify watchers of the post that it was edited
+                        mention.defer(mentioner_id=local_user.user_id, mention_id=read_post.post_id, is_comment=False) # check for mentions and notify the mentioned
                     return redirect(read_post.url)
                 else:
                     return render_template("posts/edit.html", routes=routes, user=local_user, post=read_post, client=client)
@@ -151,10 +159,14 @@ def post_delete(post_id):
     else:
         # delete post
         current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} deleted post {post_id}")
+        title = post.title
+        author_id = post.author.user_id
         post.delete()
         if is_owner:
             return redirect(local_user.url) # if this is a non-admin deletion, redirect to userpage
         else:
+            with notifier.app_queue.open():
+                        notifier.admin_censor.defer(target_id=author_id, censor_type="post", censored=title) # notify post censor
             return redirect(routes["admin_dashboard"]) # if admin, redirect to control panel
 
 # an admin menu to confirm deleting a comment
@@ -179,5 +191,10 @@ def comment_delete(comment_id):
         # delete the comment
         post = Post.read(connection, comment.comment_page)
         current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} deleted comment {comment.comment_id}")
+        content = comment.content
+        author_id = comment.author.user_id
         comment.delete()
+        if not is_owner:
+            with notifier.app_queue.open():
+                                    notifier.admin_censor.defer(target_id=author_id, censor_type="comment", censored=content) # notify comment censor
         return redirect(post.url)

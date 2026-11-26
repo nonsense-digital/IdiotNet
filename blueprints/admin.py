@@ -3,7 +3,8 @@ from smtplib import SMTPDataError
 
 from flask import Blueprint, render_template, abort, request, redirect, make_response
 
-from helpers import mailer
+
+from helpers import notifier
 from helpers.auth import *
 from helpers.db import *
 from helpers.listings import paged_posts, SearchType, search_posts, paged_clients, search_users, search_clients, \
@@ -177,6 +178,10 @@ def user_punishment(username):
                 current_app.logger.error(f"Could not send email to {search_user.username}")
         log_punishment(local_user, search_user)
 
+        # notify for a mute
+        with notifier.app_queue.open():
+            notifier.admin_punishment.defer(target_id=search_user.user_id)
+
         return redirect(search_user.url)
 
 # a menu to change user permissions level (member, moderator, or admin)
@@ -199,7 +204,10 @@ def user_change_role(username):
     else:
         # set user role
         try:
-            search_user.role = Role(request.form.get('role'))
+            role = request.form.get('role')
+            search_user.role = Role(role)
+            with notifier.app_queue.open():
+                notifier.admin_role_change.defer(target_id=search_user.user_id, role=role)
             current_app.logger.info(
                 f"[IP {request.remote_addr}] {local_user.username} promoted {search_user.username} to {search_user.role}")
         except ValueError:
@@ -228,6 +236,8 @@ def user_censor_bio(username):
         # replace with censor message
         search_user.bio = "[CENSORED BY ADMIN]"
         current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} censored the bio of {search_user.username}")
+        with notifier.app_queue.open():
+            notifier.admin_censor.defer(target_id=search_user.user_id, censor_type="bio", censored="") # notify bio censor
         return redirect(search_user.url)
 
 # if the "post approval" setting is enabled
@@ -271,13 +281,18 @@ def post_approval(post_id):
         if verdict == "approve":
             # if approved, push the post to the top of the 'latest posts' list and make it public
             post.approved = True
+            with notifier.app_queue.open():
+                notifier.admin_post_approve.defer(title=post.title, url=post.url, author_id=post.author.user_id, approved=True)
             post.date_posted = datetime.datetime.now()
             current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} approved post {post_id}")
             return redirect(routes["admin_posts_pending"])
         else:
             # if denied, delete the post
+            with notifier.app_queue.open():
+                notifier.admin_post_approve.defer(title=post.title, url=post.url, author_id=post.author.user_id, approved=False)
             current_app.logger.info(f"[IP {request.remote_addr}] {local_user.username} denied post {post_id}")
             post.delete()
+            
             return redirect(routes["admin_posts_pending"])
 
 # an admin view that lists the previously connected IP's in a table

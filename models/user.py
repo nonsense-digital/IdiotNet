@@ -357,6 +357,31 @@ class User:
         post_ids = [x[0] for x in cursor.fetchall()]
         return post_ids
 
+    @property
+    def wacthed_posts(self):
+        # query a list of post ids
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT post_id FROM watches WHERE user_id = %s ORDER BY id DESC", (self.user_id,))
+        result = cursor.fetchall()
+
+        # convert to post objects
+        posts = []
+        for post_id in result:
+            try:
+                posts.append(Post.read(self.connection, post_id[0]))
+            except NameError:
+                self.unwatch(post_id)
+        return posts
+
+    # Gets the user's liked post ids from the database (for when the post objects are unnecessary)
+    @property
+    def post_id_post_ids(self):
+        # query a list of post ids
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT post_id FROM watches WHERE user_id = %s ORDER BY id DESC", (self.user_id,))
+        post_ids = [x[0] for x in cursor.fetchall()]
+        return post_ids
+
     # Gets the user's followers, returning a list of User objects
     @property
     def followers(self):
@@ -425,10 +450,8 @@ class User:
     # method that sets a notification preference for a user
     def set_notification_preference(self, message_type:MessageType, enabled:bool, replace:bool=True):
         cursor = self.connection.cursor()
-        if replace: # run UPDATE because the record already exists
-            cursor.execute("UPDATE notification_preferences SET enabled = %s WHERE user_id = %s AND message_type = %s", (enabled, self.user_id, message_type.value))
-        else: # run INSERT because the record doesn't exist yet
-            cursor.execute("INSERT INTO notification_preferences VALUES (%s, %s, %s)", (self.user_id, message_type.value, enabled))
+        cursor.execute("INSERT INTO notification_preferences VALUES (%s, %s, %s) " \
+            "ON CONFLICT (user_id, message_type) DO UPDATE SET enabled = EXCLUDED.enabled;", (self.user_id, message_type.value, enabled))
         self.connection.commit()
         cursor.close()
 
@@ -457,7 +480,7 @@ class User:
         for message_type in not_included: # also add all missed message types as the default
             results_dict[message_type.value] = True
         return results_dict
-
+    
     # Updates the atomic values stored in the User
     def update_values(self) -> None:
         cursor = self.connection.cursor()
@@ -502,6 +525,8 @@ class User:
         for like in self.liked_post_ids:
             self.unlike(like)
 
+
+
         # remove all comments
         for comment in self.comments:
             comment.delete()
@@ -539,6 +564,18 @@ class User:
         except Exception:
             return False
 
+    # check if a post has been watched by the user
+    def is_watched(self, post_id: int) -> bool:
+        cursor = self.connection.cursor()
+        try:
+            cursor.execute("SELECT id from watches WHERE user_id = %s AND post_id = %s", (self.user_id, post_id))
+            result = cursor.fetchall()
+            cursor.close()
+            return len(result) > 0
+        except Exception as e:
+            print("ERROR IS HERE: " + str(e))
+            return False
+
     def is_followed(self, user_id: int) -> bool:
         cursor = self.connection.cursor()
         try:
@@ -564,6 +601,7 @@ class User:
                 cursor.execute("INSERT INTO follows (follower, following, date_followed) VALUES (%s, %s, %s) ", (self.user_id, user_id, date_followed))
                 self.connection.commit()
                 cursor.close()
+
             else:
                 cursor.close()
                 raise NameError("User already followed")
@@ -586,6 +624,7 @@ class User:
 
 
     # Make the user like a post
+    # TODO: Fix the weird logic on is_liked
     def like(self, post_id:int) -> None:
         # check if the post to like exists
         cursor = self.connection.cursor()
@@ -599,6 +638,7 @@ class User:
                 cursor.execute("INSERT INTO likes (liker, liked, date_liked) VALUES (%s, %s, %s)", (self.user_id, post_id, date_liked))
                 self.connection.commit()
                 cursor.close()
+
             else:
                 cursor.close()
                 raise NameError("Post already liked")
@@ -618,6 +658,41 @@ class User:
             cursor.close()
             # Probably makes life harder to throw an error
             # raise NameError("Post already unliked")
+
+    # Make the user watch a post
+    def watch(self, post_id: int) -> None:
+        # check if the post to like exists
+        cursor = self.connection.cursor()
+        if not self.is_watched(post_id):
+            # check to make sure the post hasn't been liked yet
+            cursor.execute("SELECT id from watches WHERE user_id = %s AND post_id = %s", (self.user_id, post_id))
+            result = cursor.fetchall()
+            if len(result) == 0:
+                # attempt to add the follower relationship
+                cursor.execute("INSERT INTO watches (user_id, post_id) VALUES (%s, %s)",
+                               (self.user_id, post_id))
+                self.connection.commit()
+                cursor.close()
+
+            else:
+                cursor.close()
+                raise NameError("Post already watched")
+        else:
+            cursor.close()
+            raise NameError("User doesn't exist")
+
+    # Make the user unwatch a post
+    def unwatch(self, post_id: int) -> None:
+        cursor = self.connection.cursor()
+        try:
+            # attempt to remove the follower relationship
+            cursor.execute("DELETE FROM watches WHERE user_id = %s AND post_id = %s", (self.user_id, post_id))
+            self.connection.commit()
+            cursor.close()
+        except NameError:
+            cursor.close()
+            # Probably makes life harder to throw an error
+            # raise NameError("Post already unwatched")
 
     # helper function to get a user id without pulling all user data
     @staticmethod

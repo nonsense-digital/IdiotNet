@@ -6,6 +6,14 @@ $(document).ready(function() {
     }else{
        $("#like").text ("Unlike");
     }
+
+    let watch_post = $('#watch').data('watch') === "True";
+    if(watch_post){
+        $("#watch").text("Watch");
+    }else{
+        $("#watch").text("Unwatch");
+    }
+
     let follow_user = $("#follow").data("follow") === "True";
     if(follow_user){
         $("#follow").text("Follow");
@@ -36,7 +44,29 @@ $(document).ready(function() {
               $("#like").prop("disabled", "");
           }
       });
-  });
+   });
+
+      $("#watch").click(function() {
+          const post_id = $('#watch').data('id');
+          const url = '/api/posts/' + post_id + '/watch';
+          let watch_post = $('#watch').data('watch') === "True";
+          $("#watch").prop("disabled", "true");
+          $.ajax({
+              url: url,
+              type: "POST",
+              contentType: "application/json; charset=utf-8", // Correct content type for JSON
+              data: JSON.stringify({watch: watch_post}), // Stringify JSON data
+              success: function (response) {
+                  watch_post = !watch_post;
+                  updateWatches(watch_post);
+                  $("#watch").prop("disabled", "");
+              },
+              error: function (xhr, status, error) {
+                  alert(error);
+                  $("#watch").prop("disabled", "");
+              }
+          });
+      });
     $("#follow").click(function() {
       const username = $('#follow').data('username');
       const url = '/api/users/' + username + '/follow';
@@ -70,6 +100,15 @@ function updateLikes(like_post){
     let likes = $("#like-count").text() | 0;
     likes += !like_post ? 1 : -1;
     $("#like-count").text(likes);
+}
+
+function updateWatches(watch_post){
+    $('#watch').data('watch', watch_post ? "True" : "False");
+    if(watch_post){
+        $("#watch").text("Watch");
+    }else{
+        $("#watch").text("Unwatch");
+    }
 }
 
 function updateFollows(follow_user){

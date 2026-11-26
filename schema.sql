@@ -211,12 +211,12 @@ create table verify
 -- Can be customized based on notification type in user settings
 create table notifications
 (
-    id           integer generated always as identity (minvalue 0),
+    id           integer generated always as identity (minvalue 0) primary key,
     message_type message_type default 'custom'::message_type               not null,
     message      varchar(255) default 'idiotic message'::character varying not null,
     user_id      integer                                                   not null,
-    date_sent    timestamp                                                 not null
-
+    date_sent    timestamp                                                 not null,
+    read         boolean      default false                                not null
 );
 
 -- WATCHES
@@ -224,7 +224,7 @@ create table notifications
 -- This means the user will be notified of any post changes or activity
 create table watches
 (
-    id      integer generated always as identity (minvalue 0),
+    id      integer generated always as identity (minvalue 0) primary key,
     post_id integer not null,
     user_id integer not null
 );

@@ -1,5 +1,6 @@
 from helpers.db import *
 from models.client import Client
+from models.notification import Notification
 from models.post import Post, SortMethod
 from enum import Enum
 
@@ -68,6 +69,7 @@ def paged_clients(page:int, **filters) -> tuple:
     is_last_page = len(clients) < 20
     return clients, is_last_page
 
+
 def search_users(count:int, offset:int=0, search_type:SearchType=SearchType.ALL, query:str= "") -> tuple:
     connection = get_db_connection()
     users = ()
@@ -102,3 +104,12 @@ def paged_sessions(page:int, **filters) -> tuple:
     sessions = search_sessions(20, page - 1, **filters)
     is_last_page = len(sessions) < 20
     return sessions, is_last_page
+
+def search_notifs(user_id:int, count:int, offset:int=0) -> tuple:
+    connection = get_db_connection()
+    return Notification.latest(connection, user_id, count, offset * count)
+
+def paged_notifs(user_id:int, page:int, **filters) -> tuple:
+    notifs = search_notifs(user_id, 20, page - 1, **filters)
+    is_last_page = len(notifs) < 20
+    return notifs, is_last_page

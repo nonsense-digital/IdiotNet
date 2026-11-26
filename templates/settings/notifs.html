@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}IdiotNet | Notification Settings{% endblock %}
+{% block content %}
+    <h1>Notification Settings</h1>
+    {% if error_message %}
+        <div id="error">
+            <h3>Error</h3>
+            <p>{{ error_message }}</p>
+        </div>
+    {% endif %}
+    <form action="{{ routes["notifs_settings"] }}" method="POST">
+        {% for type, enabled in user.notification_preferences.items() %}
+            <label for="_{{type}}">{{type.replace("_", " ").title()}}: </label><input type="checkbox" name="{{type}}" id="_{{type}}"
+                {% if enabled %} checked {%endif%}> <br/>
+        {% endfor %}
+        <input type="submit" class="submit" value="Submit">
+    </form>
+{% endblock %}

@@ -1,6 +1,9 @@
 from flask import Blueprint, render_template, abort, request, redirect, make_response, jsonify
+
+from helpers import notifier
 from helpers.auth import *
 from helpers.db import *
+from helpers.notifier import *
 from models.client import Client
 from models.comment import Comment
 from models.image import Image
@@ -25,6 +28,40 @@ def like_post(post_id):
             else:
                 local_user.unlike(post_id)
                 action = "unliked"
+
+            response = {
+            "message": "Success"
+            }
+            current_app.logger.info(
+                f"[IP {request.remote_addr}] {local_user.username} {action} post {post_id}")
+            with notifier.app_queue.open():
+                if Post.read(connection, post_id).author.user_id != local_user.user_id:  # don't notify self-likes
+                    like.defer(post_id, local_user.user_id) # notify the OP
+        except ValueError:
+            response = {
+                "message": "Cannot be done"
+            }
+            current_app.logger.error(
+                f"[IP {request.remote_addr}] {local_user.username} failed to {post_id}")
+        return jsonify(response)
+    except NameError as e:
+        abort(404, "Post not found")
+
+# api endpoint to watch/unwatch a post
+# returns an error message if the request failed, and a success message if it succeeded
+@api.route(API["watch_post"].format("<int:post_id>"), methods=['POST'])
+def watch_post(post_id):
+    connection = get_db_connection()
+    local_user = get_authenticated_user(connection, request.cookies)
+    try:
+        json_data = request.get_json()
+        try:
+            if bool(json_data.get("watch")):
+                local_user.watch(post_id)
+                action = "watched"
+            else:
+                local_user.unwatch(post_id)
+                action = "unwatched"
 
             response = {
             "message": "Success"
@@ -63,6 +100,8 @@ def follow_user(username):
             }
             current_app.logger.info(
                 f"[IP {request.remote_addr}] {local_user.username} {action} user {username}")
+            with notifier.app_queue.open():
+                follow.defer(followed_user, local_user.user_id)  # notify the followed
         except ValueError:
             response = {
                 "message": "Cannot be done"
@@ -84,6 +123,11 @@ def comment_post(post_id):
             comment = Comment.publish(connection, content, local_user.user_id, post_id)
             current_app.logger.info(
                 f"[IP {request.remote_addr}] {local_user.username} created comment {comment.comment_id} on post {post_id}")
+            with notifier.app_queue.open():
+                mention.defer(mentioner_id=local_user.user_id, mention_id=comment.comment_id, is_comment=True) # check for mentions and notify the mentioned
+                watched_post.defer(watched_id=post_id) # notify the watchers
+                if Post.read(connection, post_id).author.user_id != local_user.user_id: # dont notify self-commenting
+                    post_comment.defer(post_id=post_id, comment_id=comment.comment_id, commenter_id=local_user.user_id)
         return redirect(routes["post"].format(post_id))
     except NameError:
         current_app.logger.warning(f"[IP {request.remote_addr}] {local_user.username} cannot comment,  Post {post_id} not found.")
@@ -102,6 +146,11 @@ def reply_comment(root_comment_id):
             comment = Comment.publish(connection, content, local_user.user_id, root_comment.comment_page, root_comment=root_comment_id)
             current_app.logger.info(
                 f"[IP {request.remote_addr}] {local_user.username} created comment {comment.comment_id} as a reply to {root_comment_id}")
+            with notifier.app_queue.open():
+                mention.defer(mentioner_id=local_user.user_id, mention_id=comment.comment_id, is_comment=True) # check for mentions and notify the mentioned
+                comment_reply.defer(post_id=root_comment.comment_page, root_id=root_comment_id,
+                                    reply_id=comment.comment_id, replier_id=local_user.user_id)
+
         return redirect(routes["post"].format(root_comment.comment_page))
     except NameError:
         current_app.logger.warning(

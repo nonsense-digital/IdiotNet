@@ -1,4 +1,6 @@
 import datetime
+
+from routes import routes
 from models.userref import UserRef
 
 class Comment:
@@ -92,6 +94,11 @@ class Comment:
         cursor.execute("UPDATE comments set author = %s where id = %s", (author, self.comment_id))
         self.__content__ = UserRef(self.connection, author)
         cursor.close()
+
+    @property
+    @not_deleted
+    def url(self):
+        return routes["comment"].format(self.comment_page, self.comment_id)
 
     @property
     @not_deleted

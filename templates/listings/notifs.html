@@ -1,0 +1,19 @@
+<div id="notifs-list">
+    {% for notif in notifs %}
+        <div class="notif" id="{notif.message_id}">
+            <p class="message">{{notif.message|safe}}</p> <br/>
+            <span class="message-date">{{notif.date_sent}}</span>
+        </div><br/>
+    {% endfor %}
+</div>
+
+<!- thanks to https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-ix-pagination ->
+{% if pagify %}
+    {% if page > 1 %}
+        <a href="{{  url_for(request.endpoint, **combine_view_args(request.args,request.view_args,{'page':page-1}))|string }}">Previous</a>
+    {% endif %}
+    <span>Page {{ page }}</span>
+    {% if not is_last_page %}
+        <a href="{{ url_for(request.endpoint, **combine_view_args(request.args,request.view_args,{'page':page + 1}))|string}}">Next</a>
+    {% endif %}
+{% endif %}

@@ -11,7 +11,11 @@
         {% endif %}
     {% endif %}
     {% for comment in post.comments|reverse %}
-        <li><a href="{{ routes["user"].format(comment.author.username) }}">{{ comment.author.username }}</a>: {{ comment.content }}
+        <li>
+            <div id="{{comment.comment_id}}">
+                <a  href="{{ routes["user"].format(comment.author.username) }}">{{ comment.author.username }}</a>: {{ comment.content }}
+            </div>
+
             {% if (user) and ((user.role.value != "member") or (user.user_id == comment.author.user_id)) %}
                             <a href="{{ routes["comment_delete"].format(comment.comment_id) }}">
                                 <img src="/static/images/x-solid-full.svg" width="10" height="10" alt="delete comment">
@@ -19,7 +23,7 @@
             {% endif %}
             <ul class="replies">
                 {% for reply in comment.replies %}
-                    <li>
+                    <li id="{{reply.comment_id}}">
                         <a href="{{ routes["user"].format(reply.author.username) }}">{{ reply.author.username }}</a>: {{ reply.content }}
                         {% if (user) and ((user.role.value != "member") or (user.user_id == reply.author.user_id)) %}
                             <a href="{{ routes["comment_delete"].format(reply.comment_id) }}">
@@ -30,7 +34,7 @@
                 {% endfor %}
                 {% if user %}
                     {% if user.punishment_status.value != "mute" %}
-                        <li>
+                        <li >
                             <details>
                                 <summary>Reply...</summary>
 

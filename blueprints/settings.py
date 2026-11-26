@@ -7,6 +7,7 @@ from helpers.auth import *
 from helpers.db import *
 from helpers.limiter import limiter
 from helpers.mailer import EmailType
+from models.notification import MessageType
 from models.user import check_password
 from models.verify import Verify
 from routes import routes
@@ -126,3 +127,24 @@ def verify_email(verify_id):
     except NameError:
         abort(404)
 
+# Notification preferences screen
+@settings.route(routes['notifs_settings'], methods=['GET', 'POST'])
+def notifs_settings():
+    connection = get_db_connection()
+    local_user = get_authenticated_user(connection, request.cookies)
+    
+    if not local_user:
+        return redirect(routes["home"])
+    else:
+        if request.method == 'GET':
+
+            return render_template("settings/notifs.html", routes=routes, user=local_user)
+        else:
+            prefs = local_user.notification_preferences
+            for type, enabled in prefs.items():
+                new_enabled = type in request.form
+                print(type, new_enabled)
+                if new_enabled != bool(enabled): # only update settings that were actually changed
+                    local_user.set_notification_preference(MessageType(type), new_enabled)
+            return redirect(local_user.url)
+            

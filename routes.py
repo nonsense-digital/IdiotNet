@@ -3,6 +3,7 @@ routes = {
     "home": "/",
     "about": "/about",
     "post": "/posts/{}",
+    "comment": "/posts/{}#{}",
     "latest": "/posts/latest",
     "new_post": "/posts/new",
     "post_edit": "/posts/{}/edit",
@@ -22,6 +23,10 @@ routes = {
     "change_password": "/settings/password",
     "change_email": "/settings/email",
     "verify_email": "/settings/email/verify/{}",
+    "notifs": "/bonk",
+    "haha_nerd": "/notifications",
+    "notifs_settings": "/settings/bonk", 
+    "nerd_settings": "/settings/notifications",
     "search": "/search",
     "admin_dashboard": "/admin",
     "admin_config": "/admin/config",
@@ -44,6 +49,7 @@ routes = {
 # all urls for API endpoints that users do not directly interact with
 API = {
     "like_post": "/api/posts/{}/like",
+    "watch_post": "/api/posts/{}/watch",
     "follow_user": "/api/users/{}/follow",
     "comment_post": "/api/posts/{}/comment",
     "reply_comment": "/api/comments/{}/reply",

@@ -1,6 +1,8 @@
 # a whole ton of imported modules
 from __future__ import annotations
 
+import ipaddress
+
 from flask import Flask, request, abort, redirect
 from blueprints.posts import posts
 from blueprints.settings import settings
@@ -8,6 +10,7 @@ from blueprints.users import users
 from blueprints.API import api
 from blueprints.admin import admin
 from blueprints.errors import errors
+from helpers import notifier, db
 from helpers.db import *
 from helpers.auth import *
 from models.auth_token import Token
@@ -20,7 +23,7 @@ from models.permissions import PunishmentType, Role
 from werkzeug.middleware.proxy_fix import ProxyFix
 from helpers.limiter import limiter
 import datetime
-import ipaddress
+import helpers.notifier
 
 # Set up Flask app
 app = Flask(__name__)
@@ -28,6 +31,9 @@ app = Flask(__name__)
 # very important code, don't delete
 bugs = False
 working = True
+
+# set up notifier
+notifier.init_schema()
 
 # Configures logging for the Flask server
 # Code snippet from https://flask.palletsprojects.com/en/stable/logging/

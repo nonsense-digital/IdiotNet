@@ -27,3 +27,9 @@ class Role(str, Enum):
     @property
     def level(self):
         return list(self.__class__).index(self)
+
+# this isn't used much
+class CensorType(Enum):
+    POST = "post"
+    COMMENT = "comment"
+    BIO = "bio"

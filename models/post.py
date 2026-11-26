@@ -317,6 +317,22 @@ class Post:
         cursor.close()
         return len(results)
 
+    # gets the users watching the post
+    @property
+    @not_deleted
+    def watchers(self):
+        from models.user import User # code smell here we go.....
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT id from watches WHERE post_id = %s", (self.post_id,))
+        result = cursor.fetchall()
+        cursor.close()
+
+        # convert to user objects
+        users = []
+        for user_id in result:
+            users.append(User.read(self.connection, user_id[0]))
+        return users
+
     # --- POST-SPECIFIC METHODS ---
     # These are various post-specific actions one can perform.
 

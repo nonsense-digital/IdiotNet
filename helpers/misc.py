@@ -1,4 +1,5 @@
 # random useful functions that make things easier
+import re
 
 # nullpack unpacks a tuple from the database if it is not null
 # otherwise, just return null
@@ -42,3 +43,7 @@ def remove_dupes(num_list:list):
         if num not in new_list:
             new_list.append(num)
     return new_list
+
+# find mentioned users in a string (e.g. @user1, @user2)
+def get_mentions(content:str):
+    return re.findall(r'@([0-9a-zA-Z%]+)', content)

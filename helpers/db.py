@@ -21,10 +21,10 @@ def check_db_version():
         current_app.logger.error(f"Invalid database schema. {error}")
         raise RuntimeError(f"Invalid database schema. {error}")
 
-
 # get connection and/or local user
-def get_db_connection():
-    if 'db' not in g:
+# do use_g=False if you aren't in a request context
+def get_db_connection(use_g:bool=True):
+    if not use_g or (('db' not in g) and use_g): # only require that db isn't in g if use_g is true
         try:
             # connect to db and return connection
             connection = psycopg2.connect(
@@ -36,8 +36,9 @@ def get_db_connection():
                 sslmode=os.getenv("DB_SSL_MODE")
             )
 
-            g.db = connection
-            return g.db
+            if use_g:
+                g.db = connection
+            return connection
         except (Exception, psycopg2.Error) as error:
             current_app.logger.error(f"An error occurred while connecting to the database: {error}")
     else:
