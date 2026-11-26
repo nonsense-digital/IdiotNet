@@ -52,7 +52,6 @@ class Notification:
             query = "SELECT id FROM notifications WHERE user_id=%s ORDER BY date_sent DESC, id DESC OFFSET %s LIMIT %s"
             cursor.execute(query, (search_id, offset, count))
             data = cursor.fetchall()
-            print(data)
             notifs = []
             for record in data:
                 n = Notification.read(connection, record)

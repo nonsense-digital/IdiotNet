@@ -323,7 +323,7 @@ class Post:
     def watchers(self):
         from models.user import User # code smell here we go.....
         cursor = self.connection.cursor()
-        cursor.execute("SELECT id from watches WHERE post_id = %s", (self.post_id,))
+        cursor.execute("SELECT user_id from watches WHERE post_id = %s", (self.post_id,))
         result = cursor.fetchall()
         cursor.close()
 
@@ -369,7 +369,6 @@ class Post:
                     return next
                 except NameError:
                     next += 1
-                    print("the")
                 else:
                     break
 

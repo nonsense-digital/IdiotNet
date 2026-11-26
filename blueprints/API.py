@@ -25,6 +25,9 @@ def like_post(post_id):
             if bool(json_data.get("like")):
                 local_user.like(post_id)
                 action = "liked"
+                with notifier.app_queue.open():
+                    if Post.read(connection, post_id).author.user_id != local_user.user_id:  # don't notify self-likes
+                        like.defer(liked_id=post_id, liker_id=local_user.user_id) # notify the OP
             else:
                 local_user.unlike(post_id)
                 action = "unliked"
@@ -34,9 +37,7 @@ def like_post(post_id):
             }
             current_app.logger.info(
                 f"[IP {request.remote_addr}] {local_user.username} {action} post {post_id}")
-            with notifier.app_queue.open():
-                if Post.read(connection, post_id).author.user_id != local_user.user_id:  # don't notify self-likes
-                    like.defer(post_id, local_user.user_id) # notify the OP
+            
         except ValueError:
             response = {
                 "message": "Cannot be done"
@@ -92,6 +93,9 @@ def follow_user(username):
             if bool(json_data.get("follow")):
                 local_user.follow(followed_user)
                 action = "followed"
+                with notifier.app_queue.open():
+                    if followed_user != local_user.user_id: # don't notify self-follows
+                        follow.defer(followed_id=followed_user, follower_id=local_user.user_id)  # notify the followed
             else:
                 local_user.unfollow(followed_user)
                 action = "unfollowed"
@@ -100,8 +104,7 @@ def follow_user(username):
             }
             current_app.logger.info(
                 f"[IP {request.remote_addr}] {local_user.username} {action} user {username}")
-            with notifier.app_queue.open():
-                follow.defer(followed_user, local_user.user_id)  # notify the followed
+            
         except ValueError:
             response = {
                 "message": "Cannot be done"
@@ -125,7 +128,7 @@ def comment_post(post_id):
                 f"[IP {request.remote_addr}] {local_user.username} created comment {comment.comment_id} on post {post_id}")
             with notifier.app_queue.open():
                 mention.defer(mentioner_id=local_user.user_id, mention_id=comment.comment_id, is_comment=True) # check for mentions and notify the mentioned
-                watched_post.defer(watched_id=post_id) # notify the watchers
+                watched_post.defer(watched_id=post_id, commenter_id=local_user.user_id) # notify the watchers
                 if Post.read(connection, post_id).author.user_id != local_user.user_id: # dont notify self-commenting
                     post_comment.defer(post_id=post_id, comment_id=comment.comment_id, commenter_id=local_user.user_id)
         return redirect(routes["post"].format(post_id))

@@ -107,16 +107,16 @@ def comment_reply(post_id:int, root_id:int, reply_id:int, replier_id:int):
 # Be careful with this guy, it can notify as many users as there are watching a post
 # hopefully nothing bad happens......
 # watched_id = post id
-# comment_id = comment id (if applicable)
-# commenter_id = user id (if applicable)
+# commenter_id is used to prevent someone from getting notified about their own comment
 @app_queue.task(queue='notifications')
-def watched_post(watched_id:int):
+def watched_post(watched_id:int, commenter_id=-1):
     with db.get_db_connection(use_g=False) as connection:
         watched = Post.read(connection, watched_id)
         content = get_template(MessageType.WATCHED_POST).render(watched=watched)
         watchers = watched.watchers
         for watcher in watchers:
-            Notification.send(connection, MessageType.WATCHED_POST, content, watcher.user_id)
+            if watcher.user_id != commenter_id: # don't notify for own comments
+                Notification.send(connection, MessageType.WATCHED_POST, content, watcher.user_id)
 
 # mentioner_id = user id (sender)
 # mentioned user is determined from a regex search in the content
@@ -135,7 +135,8 @@ def mention(mentioner_id:int, mention_id:int, is_comment:bool):
         for mentioned_username in mentioned_usernames:
             try:
                 mentioned_id = User.read(connection, mentioned_username).user_id
-                Notification.send(connection, MessageType.MENTION, content, mentioned_id)
+                if mentioned_id != mentioner_id: # don't notify self-mentions
+                    Notification.send(connection, MessageType.MENTION, content, mentioned_id)
             except NameError:
                 pass
 

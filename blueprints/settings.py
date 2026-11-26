@@ -143,7 +143,6 @@ def notifs_settings():
             prefs = local_user.notification_preferences
             for type, enabled in prefs.items():
                 new_enabled = type in request.form
-                print(type, new_enabled)
                 if new_enabled != bool(enabled): # only update settings that were actually changed
                     local_user.set_notification_preference(MessageType(type), new_enabled)
             return redirect(local_user.url)

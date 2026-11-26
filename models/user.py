@@ -573,7 +573,6 @@ class User:
             cursor.close()
             return len(result) > 0
         except Exception as e:
-            print("ERROR IS HERE: " + str(e))
             return False
 
     def is_followed(self, user_id: int) -> bool:
